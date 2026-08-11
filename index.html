@@ -316,8 +316,22 @@ tbody tr.click{cursor:pointer}
 
 /* ── registration checkboxes on the advisee list ── */
 .regbox{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
-td:has(.regbox){background:rgba(31,79,216,.025)}
+
 th[style*="74px"]{line-height:1.25}
+
+/* ── degree audit status: row tint on the advisee list ── */
+tbody tr.audit-ok{background:rgba(17,112,75,.07)}
+tbody tr.audit-ok:hover{background:rgba(17,112,75,.14)}
+tbody tr.audit-watch{background:rgba(168,100,0,.09)}
+tbody tr.audit-watch:hover{background:rgba(168,100,0,.17)}
+tbody tr.audit-urgent{background:rgba(180,35,42,.08)}
+tbody tr.audit-urgent:hover{background:rgba(180,35,42,.16)}
+tbody tr.audit-ok td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+tbody tr.audit-watch td:first-child{box-shadow:inset 3px 0 0 var(--watch)}
+tbody tr.audit-urgent td:first-child{box-shadow:inset 3px 0 0 var(--urgent)}
+@media print{
+  tbody tr[class*="audit-"]{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -1015,6 +1029,8 @@ function studentFlags(s) {
   return f;
 }
 function priorityRank(e) { return e.priority === 'urgent' ? 0 : e.priority === 'watch' ? 1 : 2; }
+const AUDIT_TONE = { 'on track': 'ok', 'complete': 'ok', 'needs review': 'watch', 'delayed': 'urgent', 'incomplete': 'urgent' };
+function auditTone(s) { return AUDIT_TONE[String(s.auditStatus || '').toLowerCase().trim()] || ''; }
 
 async function save(msg) {
   await Vault.persist();
@@ -1209,7 +1225,8 @@ function renderStudents(p) {
     const pr = curriculumProgress(s);
     const last = lastMeeting(s);
     const open = openItems(s);
-    return `<tr class="click" data-open="${s.id}">
+    const tone = auditTone(s);
+    return `<tr class="click${tone ? ' audit-' + tone : ''}" data-open="${s.id}">
         <td class="name-cell">${esc(s.last)}, ${esc(s.first)}${s.careerAmbition ? `<div class="sub">${esc(s.careerAmbition)}</div>` : ''}</td>
         <td class="mono sub">${esc(s.sid || '')}</td>
         <td class="sub">${esc(s.classYear || '—')}</td>
@@ -1217,6 +1234,7 @@ function renderStudents(p) {
         <td>${pr ? `<div class="prog${pr.pct >= 100 ? ' done' : ''}" style="margin:0"><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
         <td class="mono ${!last || daysBetween(last, today()) > 60 ? '' : ''}" style="${!last || daysBetween(last, today()) > 60 ? 'color:var(--watch)' : ''}">${last ? esc(fmtDate(last)) : 'never'}</td>
         <td><div class="chips">
+          ${s.auditStatus ? `<span class="chip ${tone}">${esc(s.auditStatus)}</span>` : ''}
           ${open.filter(e => e.priority === 'urgent').length ? `<span class="chip urgent">${open.filter(e => e.priority === 'urgent').length} urgent</span>` : ''}
           ${open.filter(e => e.priority === 'watch').length ? `<span class="chip watch">${open.filter(e => e.priority === 'watch').length} watch</span>` : ''}
           ${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}
@@ -1555,6 +1573,7 @@ function renderProfileTab(body, s) {
         ${Object.entries(progs).map(([k, t]) => `<option value="${esc(k)}" ${s.program === k ? 'selected' : ''}>${esc(t.title)}</option>`).join('')}
       </select></div>
       ${F('track', 'Track / concentration')}
+      ${F('minor', 'Minor')}
       ${F('careerAmbition', 'Career ambition', { ph: 'PA school, dentistry, research…' })}
       ${F('preferredEmail', 'Preferred email', { type: 'email' })}
     </div></div>
@@ -1562,7 +1581,7 @@ function renderProfileTab(body, s) {
     <div class="sec-label">Progress toward the degree</div>
     <div class="card"><div class="fields">
       ${F('creditsEarned', 'Credits earned')}${F('creditsRemaining', 'Credits remaining')}
-      ${F('auditStatus', 'Degree audit status', { select: ['', 'On track', 'Needs review', 'Incomplete', 'Complete'] })}
+      ${F('auditStatus', 'Degree audit status', { select: ['', 'On track', 'Needs review', 'Delayed', 'Incomplete', 'Complete'] })}
       ${F('planLastThree', 'Last-three-semesters plan', { select: ['', 'Not needed yet', 'Needed', 'In progress', 'Complete'] })}
     </div></div>
 
@@ -1767,7 +1786,7 @@ function renderData(p) {
 /* ═══ IMPORT: Excel roster ═══════════════════════════════ */
 const FIELD_MAP = [
   ['last', 'Last name'], ['first', 'First name'], ['sid', 'Student ID'], ['classYear', 'Class year'],
-  ['program', 'Program'], ['track', 'Track / concentration'], ['careerAmbition', 'Career ambition'],
+  ['program', 'Program'], ['track', 'Track / concentration'], ['minor', 'Minor'], ['careerAmbition', 'Career ambition'],
   ['preferredEmail', 'Preferred email'], ['creditsEarned', 'Credits earned'], ['creditsRemaining', 'Credits remaining'],
   ['auditStatus', 'Degree audit status'], ['planLastThree', 'Last-three plan'], ['registrationHold', 'Registration hold'],
   ['academicConcern', 'Academic concern'], ['scholarshipCheck', 'Scholarship check'], ['otherFlag', 'Other flag'],
@@ -1776,7 +1795,7 @@ const FIELD_MAP = [
 ];
 const GUESS = {
   last: /^last/i, first: /^first/i, sid: /student\s*id|^id$/i, classYear: /class\s*year|^year$/i,
-  program: /^major|program|track$/i, careerAmbition: /career|ambition/i, preferredEmail: /email/i,
+  program: /^major|program|track$/i, minor: /minor/i, careerAmbition: /career|ambition/i, preferredEmail: /email/i,
   creditsEarned: /credits?\s*earned/i, creditsRemaining: /credits?\s*remain/i, auditStatus: /audit/i,
   planLastThree: /last\s*three/i, registrationHold: /hold/i, academicConcern: /concern/i,
   scholarshipCheck: /scholarship/i, otherFlag: /other\s*flag/i, oneNoteLink: /onenote/i,
@@ -1873,7 +1892,7 @@ function applyImport(rows, map) {
     let s = sid ? students().find(x => x.sid && x.sid === sid) : null;
     if (!s) s = students().find(x => x.last.toLowerCase() === last.toLowerCase() && x.first.toLowerCase() === first.toLowerCase() && last);
     if (!s) { s = newStudent(); students().push(s); added++; } else updated++;
-    ['last', 'first', 'sid', 'classYear', 'track', 'careerAmbition', 'preferredEmail', 'creditsEarned',
+    ['last', 'first', 'sid', 'classYear', 'track', 'minor', 'careerAmbition', 'preferredEmail', 'creditsEarned',
       'creditsRemaining', 'auditStatus', 'planLastThree', 'otherFlag', 'oneNoteLink', 'worksheetsDir'].forEach(k => {
         const v = val(r, k); if (v) s[k] = v;
       });
@@ -1935,7 +1954,7 @@ function oneNoteFlow(preStudent) {
 
 /* ═══ EXPORTS ════════════════════════════════════════════ */
 function exportCsv() {
-  const cols = ['last', 'first', 'sid', 'classYear', 'program', 'track', 'careerAmbition', 'preferredEmail',
+  const cols = ['last', 'first', 'sid', 'classYear', 'program', 'track', 'minor', 'careerAmbition', 'preferredEmail',
     'creditsEarned', 'creditsRemaining', 'auditStatus', 'planLastThree', 'registrationHold', 'academicConcern',
     'scholarshipCheck', 'otherFlag', 'generalNotes'];
   const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
