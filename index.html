@@ -1,0 +1,2330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Advising Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>:root{
+  --ink:#151821; --ink-2:#1e222e; --ink-3:#2b3140;
+  --paper:#faf9f6; --surface:#ffffff; --surface-2:#f2f1ec;
+  --line:rgba(21,24,33,.10); --line-2:rgba(21,24,33,.18);
+  --text:#171a21; --muted:#666b78; --faint:#9aa0ab;
+  --accent:#1f4fd8; --accent-soft:#e8edfd;
+  --urgent:#b4232a; --urgent-soft:#fbeaea;
+  --watch:#a86400; --watch-soft:#fdf1dd;
+  --ok:#11704b; --ok-soft:#e2f2ea;
+  --sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'DM Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --serif:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --rail:212px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+::selection{background:#d5e0fb}
+
+/* ══ Lock screen ══ */
+.lock{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:900;padding:24px}
+.lock-card{width:100%;max-width:380px;color:#e8e9ec}
+.lock-mark{font-family:var(--serif);font-size:38px;line-height:1.05;letter-spacing:-.01em;color:#fff}
+.lock-sub{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#8a90a0;margin-top:8px}
+.lock form{margin-top:30px;display:flex;flex-direction:column;gap:10px}
+.lock input{background:var(--ink-2);border:1px solid #333a4c;border-radius:6px;padding:11px 13px;color:#fff;font-family:var(--mono);font-size:13px}
+.lock input::placeholder{color:#5d6474}
+.lock .btn{background:var(--accent);color:#fff;border-radius:6px;padding:11px;font-weight:500}
+.lock-note{font-size:12px;color:#767d8d;margin-top:18px;line-height:1.6}
+.lock-note strong{color:#b9bfcc;font-weight:500}
+.lock-err{color:#ff9a9a;font-size:12.5px;font-family:var(--mono);min-height:16px}
+.lock-alt{margin-top:16px;font-size:12.5px;color:#8a90a0}
+.lock-alt button{color:#b9bfcc;text-decoration:underline;text-underline-offset:2px;font-size:12.5px}
+
+/* ══ Shell ══ */
+.shell{display:none;min-height:100vh}
+.shell.on{display:block}
+.rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail);background:var(--ink);color:#c7cbd4;display:flex;flex-direction:column;z-index:60}
+.rail-top{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.rail-mark{font-family:var(--serif);font-size:21px;color:#fff;letter-spacing:-.01em}
+.rail-mark span{color:#7d859a}
+.rail-status{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#6d7488;margin-top:5px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:#3f8f6a;flex:none}
+.dot.warn{background:#c98a00}
+.dot.off{background:#5a6070}
+.nav{padding:10px 8px;display:flex;flex-direction:column;gap:1px}
+.nav button{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;font-size:13px;color:#aeb4c2;text-align:left;width:100%}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button.on{background:rgba(255,255,255,.11);color:#fff}
+.nav .n-count{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:#7d859a}
+.nav button.on .n-count{color:#c7cbd4}
+.nav .n-count.hot{color:#ff8b8b}
+.rail-sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#5d6474;padding:14px 18px 6px}
+.rail-list{flex:1;overflow-y:auto;padding:0 8px 8px}
+.rail-item{display:flex;align-items:baseline;gap:8px;padding:6px 10px;border-radius:6px;width:100%;text-align:left;font-size:12.5px;color:#aeb4c2}
+.rail-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.rail-item .tick{width:3px;height:13px;border-radius:2px;flex:none;align-self:center}
+.rail-item .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rail-item .when{margin-left:auto;font-family:var(--mono);font-size:10px;color:#6d7488;flex:none}
+.rail-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:6px}
+.rail-bottom button{flex:1;font-size:11.5px;color:#aeb4c2;padding:7px;border-radius:5px;background:rgba(255,255,255,.06)}
+.rail-bottom button:hover{background:rgba(255,255,255,.12);color:#fff}
+
+.main{margin-left:var(--rail);min-height:100vh}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,249,246,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:11px 28px;display:flex;align-items:center;gap:12px}
+.search-wrap{flex:1;max-width:520px;position:relative}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--line-2);border-radius:7px;padding:8px 11px 8px 32px;font-size:13.5px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--faint)}
+.search-wrap kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:10px;color:var(--faint);border:1px solid var(--line-2);border-radius:3px;padding:1px 4px}
+.saved{font-family:var(--mono);font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-left:auto;white-space:nowrap}
+.saved.dirty{color:var(--watch)}
+.saved.stale{color:var(--urgent);font-weight:500}
+
+.page{padding:26px 28px 90px;max-width:1180px}
+.page-head{display:flex;align-items:flex-end;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+h1{font-family:var(--serif);font-size:31px;font-weight:400;letter-spacing:-.015em;line-height:1.1}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+h2{font-family:var(--serif);font-size:20px;font-weight:400;letter-spacing:-.01em}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:10px;margin:26px 0 11px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.sec-label:first-child{margin-top:0}
+
+.btn{border:1px solid var(--line-2);background:var(--surface);border-radius:6px;padding:7px 12px;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--text)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:#1a43ba}
+.btn.danger{color:var(--urgent);border-color:#e8bcbc}
+.btn.danger:hover{background:var(--urgent-soft);border-color:var(--urgent)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+
+/* ══ Cards / metrics ══ */
+.grid{display:grid;gap:12px}
+.metrics{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:14px 15px}
+.metric .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint)}
+.metric .v{font-family:var(--serif);font-size:31px;line-height:1.1;margin-top:5px}
+.metric .s{font-size:11.5px;color:var(--muted);margin-top:2px}
+.metric.hot .v{color:var(--urgent)}
+.metric.warm .v{color:var(--watch)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:16px}
+
+/* ══ Tables ══ */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);font-weight:400;padding:0 10px 7px;border-bottom:1px solid var(--line)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr.click{cursor:pointer}
+.t-wrap{background:var(--surface);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.t-wrap table{margin:0}
+.t-wrap th{padding-top:11px}
+.t-wrap tbody tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono);font-size:12px}
+.num{font-family:var(--mono);font-size:12.5px;text-align:right}
+.name-cell{font-weight:500}
+.sub{color:var(--muted);font-size:12px}
+
+/* ══ Chips / flags ══ */
+.chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.urgent{background:var(--urgent-soft);color:var(--urgent)}
+.chip.watch{background:var(--watch-soft);color:var(--watch)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.accent{background:var(--accent-soft);color:var(--accent)}
+.chip.solid{background:var(--ink);color:#fff}
+.chips{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+
+/* ══ Student header ══ */
+.rec-head{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line-2)}
+.rec-name{font-family:var(--serif);font-size:38px;font-weight:400;line-height:1.05;letter-spacing:-.02em}
+.rec-meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:7px;display:flex;gap:14px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 20px;overflow-x:auto}
+.tabs button{padding:10px 13px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button:hover{color:var(--text)}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+.tabs .tcount{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:4px}
+
+/* ══ Record spine (signature) ══ */
+.spine{position:relative;padding-left:126px}
+.spine::before{content:'';position:absolute;left:104px;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.ev{position:relative;margin-bottom:14px}
+.ev-date{position:absolute;left:-126px;width:96px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.35;padding-top:13px}
+.ev-date .yr{display:block;color:var(--faint);font-size:10px}
+.ev::before{content:'';position:absolute;left:-28px;top:19px;width:9px;height:9px;border-radius:50%;background:var(--surface);border:2px solid var(--line-2)}
+.ev.p-urgent::before{border-color:var(--urgent);background:var(--urgent)}
+.ev.p-watch::before{border-color:var(--watch);background:var(--watch)}
+.ev.p-done::before{border-color:var(--ok);background:var(--ok)}
+.ev-card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+.ev.p-urgent .ev-card{border-left:3px solid var(--urgent)}
+.ev.p-watch .ev-card{border-left:3px solid var(--watch)}
+.ev-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.ev-title{font-weight:500;font-size:14px}
+.ev-body{font-size:13.5px;line-height:1.62;color:#2c3038}
+.ev-body p{margin:.45em 0}
+.ev-body ul,.ev-body ol{margin:.45em 0 .45em 1.3em}
+.ev-body table{margin:.6em 0;font-size:12.5px;border:1px solid var(--line)}
+.ev-body td,.ev-body th{border:1px solid var(--line);padding:5px 8px}
+.ev-body img{max-width:100%;border-radius:5px;margin:.4em 0}
+.ev-body blockquote{border-left:2px solid var(--line-2);padding-left:11px;color:var(--muted);margin:.5em 0}
+.ev-fold{max-height:190px;overflow:hidden;position:relative}
+.ev-fold::after{content:'';position:absolute;inset:auto 0 0;height:52px;background:linear-gradient(transparent,var(--surface))}
+.ev-more{font-size:12px;color:var(--accent);margin-top:6px}
+.ev-act{display:flex;gap:9px;margin-top:9px;opacity:0;transition:opacity .12s}
+.ev:hover .ev-act,.ev-act:focus-within{opacity:1}
+.ev-act button{font-size:11.5px;color:var(--muted)}
+.ev-act button:hover{color:var(--text);text-decoration:underline}
+.ev-fields{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2)}
+.ev-fields b{font-weight:500;color:var(--text)}
+
+/* ══ Forms ══ */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint)}
+.field input,.field select,.field textarea{border:1px solid var(--line-2);border-radius:6px;padding:7px 9px;font-size:13.5px;background:var(--surface);width:100%}
+.field textarea{resize:vertical;min-height:70px;line-height:1.55}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.field.wide{grid-column:1/-1}
+.hint{font-size:11.5px;color:var(--muted)}
+
+/* ══ Editor ══ */
+.editor{border:1px solid var(--line-2);border-radius:8px;background:var(--surface);overflow:hidden}
+.ed-bar{display:flex;gap:1px;padding:5px;border-bottom:1px solid var(--line);background:var(--surface-2);flex-wrap:wrap}
+.ed-bar button{padding:4px 8px;border-radius:4px;font-size:12.5px;color:var(--muted);min-width:28px}
+.ed-bar button:hover{background:var(--surface);color:var(--text)}
+.ed-bar b{font-weight:700}
+.ed-bar .sep{width:1px;background:var(--line-2);margin:3px 4px}
+.ed-area{min-height:150px;max-height:440px;overflow-y:auto;padding:11px 13px;font-size:13.5px;line-height:1.62}
+.ed-area:focus{outline:none}
+.ed-area:empty::before{content:attr(data-ph);color:var(--faint)}
+.ed-area table{border:1px solid var(--line);font-size:12.5px}
+.ed-area td,.ed-area th{border:1px solid var(--line);padding:5px 8px;min-width:44px}
+.ed-area img{max-width:100%}
+.ed-area ul,.ed-area ol{margin-left:1.3em}
+
+/* ══ Curriculum ══ */
+.prog{height:7px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin:8px 0 5px}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.prog.done i{background:var(--ok)}
+.yr-band{margin-bottom:20px}
+.term-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:8px}
+.creq{display:flex;gap:9px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;text-align:left;width:100%}
+.creq:hover{border-color:var(--line-2)}
+.creq.done{background:var(--ok-soft);border-color:#b9dcca}
+.creq .box{width:15px;height:15px;border:1.5px solid var(--line-2);border-radius:4px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center}
+.creq.done .box{background:var(--ok);border-color:var(--ok);color:#fff}
+.creq .cc{font-family:var(--mono);font-size:12px;font-weight:500}
+.creq .cn{font-size:12px;color:var(--muted);line-height:1.35;margin-top:1px}
+.creq .ct{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.gbd-grp{margin-bottom:14px}
+.gbd-grp>.gl{font-size:12.5px;font-weight:500;margin-bottom:6px}
+.gbd-grp>.gl span{font-family:var(--mono);font-size:10px;color:var(--faint);font-weight:400;text-transform:uppercase;letter-spacing:.06em;margin-left:7px}
+
+/* ══ Plan ══ */
+.plan-card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:14px;margin-bottom:12px}
+.plan-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.plan-head input{border:1px solid transparent;background:none;font-family:var(--serif);font-size:19px;padding:2px 5px;border-radius:5px;flex:1;min-width:0}
+.plan-head input:hover{border-color:var(--line)}
+.plan-head input:focus{border-color:var(--accent);outline:none;background:var(--surface)}
+.plan-t input{border:1px solid transparent;background:none;padding:5px 7px;width:100%;border-radius:4px;font-size:13px}
+.plan-t input:hover{background:var(--surface-2)}
+.plan-t input:focus{border-color:var(--accent);background:var(--surface);outline:none}
+.plan-t td{padding:1px 2px}
+.plan-t tr.hl input{background:#fff8cc}
+.plan-t .cr-in{text-align:right;font-family:var(--mono);font-size:12.5px}
+.plan-t .code-in{font-family:var(--mono);font-size:12.5px}
+.plan-tot{display:flex;justify-content:flex-end;gap:10px;align-items:baseline;padding-top:8px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.plan-tot b{font-size:15px;color:var(--text)}
+.x-btn{color:var(--faint);padding:3px 6px;font-size:15px;line-height:1;border-radius:4px}
+.x-btn:hover{color:var(--urgent);background:var(--urgent-soft)}
+
+/* ══ Drop zone ══ */
+.drop{border:1.5px dashed var(--line-2);border-radius:9px;padding:22px;text-align:center;color:var(--muted);font-size:13px;background:var(--surface)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.drop b{display:block;font-size:14px;color:var(--text);font-weight:500;margin-bottom:3px}
+.drop.over b{color:var(--accent)}
+.att{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-size:12px;margin:3px 4px 0 0}
+.att a{color:var(--text);text-decoration:none}
+.att a:hover{text-decoration:underline}
+
+/* ══ Modal ══ */
+.modal-bg{position:fixed;inset:0;background:rgba(18,20,27,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:200;overflow-y:auto;backdrop-filter:blur(2px)}
+.modal{background:var(--paper);border-radius:12px;width:100%;max-width:660px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.modal.wide{max-width:960px}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;background:var(--surface)}
+.modal-head h2{flex:1}
+.modal-body{padding:20px;max-height:calc(100vh - 220px);overflow-y:auto}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:var(--surface)}
+
+/* ══ Search results ══ */
+.res{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 14px;margin-bottom:7px}
+.res:hover{border-color:var(--accent)}
+.res-top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.res-who{font-weight:500;font-size:13.5px}
+.res-snip{font-size:12.5px;color:var(--muted);line-height:1.55}
+.res-snip mark{background:#fff2a8;color:inherit;border-radius:2px;padding:0 1px}
+
+/* ══ Toast ══ */
+.toasts{position:fixed;bottom:18px;right:18px;z-index:500;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.toast{background:var(--ink);color:#fff;border-radius:8px;padding:10px 15px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.24);max-width:400px;animation:pop .2s ease}
+.toast.bad{background:var(--urgent)}
+.toast.good{background:var(--ok)}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}}
+
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty h3{font-family:var(--serif);font-size:21px;font-weight:400;color:var(--text);margin-bottom:6px}
+.empty p{font-size:13.5px;max-width:420px;margin:0 auto 14px}
+
+.filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters select,.filters input{border:1px solid var(--line-2);border-radius:6px;padding:6px 9px;font-size:12.5px;background:var(--surface)}
+.seg{display:flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden}
+.seg button{padding:6px 11px;font-size:12.5px;color:var(--muted);border-right:1px solid var(--line-2)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--ink);color:#fff}
+
+@media (max-width:860px){
+  :root{--rail:0px}
+  .rail{transform:translateX(-100%);transition:transform .2s;width:212px}
+  .rail.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.3)}
+  .main{margin-left:0}
+  .page{padding:18px 15px 80px}
+  .spine{padding-left:0}
+  .spine::before{display:none}
+  .ev::before{display:none}
+  .ev-date{position:static;width:auto;text-align:left;padding:0 0 4px}
+  .ev-date .yr{display:inline;margin-left:5px}
+  .rec-name{font-size:29px}
+  .menu-btn{display:block !important}
+}
+.menu-btn{display:none;padding:6px 9px;border:1px solid var(--line-2);border-radius:6px}
+
+@media print{
+  .rail,.topbar,.tabs,.ev-act,.no-print,.btn{display:none !important}
+  .main{margin:0}
+  .page{padding:0;max-width:none}
+  .ev-card,.card,.t-wrap{border-color:#ccc;break-inside:avoid}
+  .ev-fold{max-height:none}
+  .ev-fold::after{display:none}
+  body{background:#fff}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+
+<div class="lock" id="lock">
+  <div class="lock-card">
+    <div class="lock-mark" id="lock-title">Advising Hub</div>
+    <div class="lock-sub" id="lock-sub">Locked</div>
+    <form id="lock-form" autocomplete="off">
+      <input type="password" id="pass" placeholder="Passcode" autocomplete="current-password">
+      <input type="password" id="pass2" placeholder="Passcode again" autocomplete="new-password">
+      <div class="lock-err" id="lock-err"></div>
+      <button type="submit" class="btn" id="lock-go">Unlock</button>
+    </form>
+    <p class="lock-note" id="lock-note"></p>
+    <div class="lock-alt" id="lock-restore" style="display:none">Already have a backup file? <button type="button">Restore it after setup</button></div>
+  </div>
+</div>
+
+<div class="shell" id="shell">
+  <aside class="rail" id="rail">
+    <div class="rail-top">
+      <div class="rail-mark">Advising<span> Hub</span></div>
+      <div class="rail-status" id="rail-status"></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="rail-sec" id="rail-sec-label">Priority</div>
+    <div class="rail-list" id="rail-list"></div>
+    <div class="rail-bottom">
+      <button data-act="backup">Back up</button>
+      <button data-act="lock">Lock</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+        <input id="search" placeholder="Search every record — names, notes, emails, courses" autocomplete="off">
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="saved" id="saved"></div>
+    </div>
+    <div class="page" id="page"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>/* ═══════════════════════════════════════════════════════════
+   Advising Hub — core: storage, crypto, sync, file parsers
+   No network. No dependencies. Everything stays in this browser.
+   ═══════════════════════════════════════════════════════════ */
+
+const APP = 'advising-hub';
+const APP_VER = 1;
+const KDF_ITERS = 310000;
+
+/* ─── tiny helpers ─────────────────────────────────────── */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const uid = () => (Date.now().toString(36) + Math.random().toString(36).slice(2, 9));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const b64e = buf => { let s = '', b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+const b64d = str => { const s = atob(str), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
+const stripHtml = h => { const d = document.createElement('div'); d.innerHTML = h || ''; return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
+
+function fmtDate(d, style) {
+  if (!d) return '';
+  const t = typeof d === 'string' ? new Date(d + (d.length === 10 ? 'T12:00:00' : '')) : new Date(d);
+  if (isNaN(t)) return String(d);
+  if (style === 'long') return t.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+  if (style === 'time') return t.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return t.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+const today = () => new Date().toISOString().slice(0, 10);
+function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+/* ─── IndexedDB (raw records only; contents are ciphertext) ─── */
+const IDB = (() => {
+  let dbp;
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      const r = indexedDB.open(APP, 1);
+      r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return dbp;
+  }
+  async function tx(mode, fn) {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('kv', mode), s = t.objectStore('kv');
+      const req = fn(s);
+      t.oncomplete = () => res(req && req.result);
+      t.onerror = () => rej(t.error);
+    });
+  }
+  return {
+    get: k => tx('readonly', s => s.get(k)),
+    set: (k, v) => tx('readwrite', s => s.put(v, k)),
+    del: k => tx('readwrite', s => s.delete(k)),
+  };
+})();
+
+/* ─── Crypto: passcode → AES-GCM ───────────────────────── */
+const Crypt = {
+  async deriveKey(pass, salt, iters) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: iters || KDF_ITERS, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  },
+  async encrypt(key, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const data = new TextEncoder().encode(JSON.stringify(obj));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+    return { iv: b64e(iv), ct: b64e(ct) };
+  },
+  async decrypt(key, iv, ct) {
+    const buf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(iv) }, key, b64d(ct));
+    return JSON.parse(new TextDecoder().decode(buf));
+  },
+};
+
+/* ─── The vault ────────────────────────────────────────── */
+const Vault = {
+  key: null, data: null, meta: null,
+  fileHandle: null, fileLinked: false,
+  dirty: 0, lastSaved: null, lastBackup: null,
+  deviceId: null,
+
+  blank() {
+    return {
+      app: APP, schema: APP_VER,
+      settings: { advisorName: '', autoLockMin: 30, termLabels: [] },
+      students: [], templates: {},
+      createdAt: new Date().toISOString(),
+    };
+  },
+
+  async exists() { return !!(await IDB.get('vault')); },
+
+  async create(pass) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    this.key = await Crypt.deriveKey(pass, salt);
+    this.data = this.blank();
+    this.deviceId = uid();
+    this.meta = { salt: b64e(salt), iters: KDF_ITERS, rev: 1, deviceId: this.deviceId, device: navigator.platform || 'this machine', updatedAt: new Date().toISOString() };
+    await this.persist();
+    await IDB.set('deviceId', this.deviceId);
+    return true;
+  },
+
+  async unlock(pass) {
+    const rec = await IDB.get('vault');
+    if (!rec) throw new Error('No vault on this machine.');
+    const key = await Crypt.deriveKey(pass, b64d(rec.salt), rec.iters);
+    this.data = await Crypt.decrypt(key, rec.iv, rec.ct); // throws on wrong passcode
+    this.key = key;
+    this.meta = { salt: rec.salt, iters: rec.iters, rev: rec.rev || 1, deviceId: rec.deviceId, device: rec.device, updatedAt: rec.updatedAt };
+    this.deviceId = (await IDB.get('deviceId')) || rec.deviceId;
+    this.lastBackup = await IDB.get('lastBackup');
+    this.dirty = (await IDB.get('dirtyCount')) || 0;
+    await this.restoreFileLink();
+    return true;
+  },
+
+  async changePasscode(oldPass, newPass) {
+    const rec = await IDB.get('vault');
+    const oldKey = await Crypt.deriveKey(oldPass, b64d(rec.salt), rec.iters);
+    await Crypt.decrypt(oldKey, rec.iv, rec.ct);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    this.key = await Crypt.deriveKey(newPass, salt);
+    this.meta.salt = b64e(salt); this.meta.iters = KDF_ITERS;
+    await this.persist();
+  },
+
+  lock() { this.key = null; this.data = null; },
+
+  async persist() {
+    if (!this.key) return;
+    this.meta.rev = (this.meta.rev || 0) + 1;
+    this.meta.updatedAt = new Date().toISOString();
+    this.meta.deviceId = this.deviceId;
+    const { iv, ct } = await Crypt.encrypt(this.key, this.data);
+    await IDB.set('vault', { ...this.meta, iv, ct, schema: APP_VER });
+    this.lastSaved = new Date();
+    this.dirty++;
+    await IDB.set('dirtyCount', this.dirty);
+    if (this.fileHandle) this.queueFileWrite();
+  },
+
+  /* ── optional direct-to-file sync (Chrome/Edge) ── */
+  supportsFile() { return typeof window.showSaveFilePicker === 'function'; },
+
+  async linkFile(mode) {
+    let handle;
+    if (mode === 'open') {
+      [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'Advising Hub backup', accept: { 'application/octet-stream': ['.hub'] } }],
+      });
+    } else {
+      handle = await window.showSaveFilePicker({
+        suggestedName: 'advising-hub.hub',
+        types: [{ description: 'Advising Hub backup', accept: { 'application/octet-stream': ['.hub'] } }],
+      });
+    }
+    this.fileHandle = handle; this.fileLinked = true;
+    await IDB.set('fileHandle', handle);
+    return handle;
+  },
+
+  async unlinkFile() { this.fileHandle = null; this.fileLinked = false; await IDB.del('fileHandle'); },
+
+  async restoreFileLink() {
+    const h = await IDB.get('fileHandle');
+    if (!h) return null;
+    try {
+      const perm = await h.queryPermission({ mode: 'readwrite' });
+      this.fileHandle = h; this.fileLinked = true;
+      return perm; // 'granted' | 'prompt' | 'denied'
+    } catch (e) { return null; }
+  },
+
+  async ensureFilePermission() {
+    if (!this.fileHandle) return false;
+    let p = await this.fileHandle.queryPermission({ mode: 'readwrite' });
+    if (p !== 'granted') p = await this.fileHandle.requestPermission({ mode: 'readwrite' });
+    return p === 'granted';
+  },
+
+  queueFileWrite() {
+    clearTimeout(this._fw);
+    this._fw = setTimeout(() => this.writeFile().catch(e => console.warn('file write', e)), 1500);
+  },
+
+  async writeFile() {
+    if (!this.fileHandle || !(await this.ensureFilePermission())) return false;
+    const blob = await this.makeBackupBlob();
+    const w = await this.fileHandle.createWritable();
+    await w.write(blob); await w.close();
+    this.dirty = 0; await IDB.set('dirtyCount', 0);
+    this.lastBackup = new Date().toISOString();
+    await IDB.set('lastBackup', this.lastBackup);
+    window.dispatchEvent(new CustomEvent('vault-saved'));
+    return true;
+  },
+
+  async readLinkedFile() {
+    if (!this.fileHandle) return null;
+    if (!(await this.ensureFilePermission())) return null;
+    const f = await this.fileHandle.getFile();
+    return JSON.parse(await f.text());
+  },
+
+  /* ── backup payload ── */
+  async makeBackupBlob() {
+    const { iv, ct } = await Crypt.encrypt(this.key, this.data);
+    const payload = {
+      app: APP, kind: 'encrypted-backup', schema: APP_VER,
+      kdf: { salt: this.meta.salt, iters: this.meta.iters, hash: 'SHA-256' },
+      rev: this.meta.rev, deviceId: this.deviceId, device: this.meta.device,
+      updatedAt: this.meta.updatedAt, exportedAt: new Date().toISOString(),
+      counts: { students: this.data.students.length, entries: this.data.students.reduce((n, s) => n + (s.entries || []).length, 0) },
+      iv, ct,
+    };
+    return new Blob([JSON.stringify(payload)], { type: 'application/octet-stream' });
+  },
+
+  async downloadBackup() {
+    const blob = await this.makeBackupBlob();
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    download(blob, `advising-hub-${stamp}.hub`);
+    this.dirty = 0; await IDB.set('dirtyCount', 0);
+    this.lastBackup = new Date().toISOString();
+    await IDB.set('lastBackup', this.lastBackup);
+    window.dispatchEvent(new CustomEvent('vault-saved'));
+  },
+
+  async openBackup(file, pass) {
+    const payload = JSON.parse(await file.text());
+    if (payload.app !== APP) throw new Error('Not an Advising Hub backup file.');
+    if (payload.kind === 'plain-export') return { payload, data: payload.data };
+    const key = await Crypt.deriveKey(pass, b64d(payload.kdf.salt), payload.kdf.iters);
+    const data = await Crypt.decrypt(key, payload.iv, payload.ct);
+    return { payload, data };
+  },
+
+  async replaceData(data, sourceMeta) {
+    this.data = data;
+    if (sourceMeta && sourceMeta.rev) this.meta.rev = sourceMeta.rev;
+    await this.persist();
+  },
+};
+
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+/* ═══ ZIP + XLSX reader (no libraries) ═══════════════════ */
+async function unzip(arrayBuffer) {
+  const dv = new DataView(arrayBuffer), u8 = new Uint8Array(arrayBuffer);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('Not a valid .xlsx file.');
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const files = {};
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const compSize = dv.getUint32(p + 20, true);
+    const nameLen = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const cmtLen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen));
+    const lNameLen = dv.getUint16(lho + 26, true), lExtraLen = dv.getUint16(lho + 28, true);
+    const start = lho + 30 + lNameLen + lExtraLen;
+    files[name] = { method, bytes: u8.subarray(start, start + compSize) };
+    p += 46 + nameLen + extraLen + cmtLen;
+  }
+  const out = {};
+  for (const [name, f] of Object.entries(files)) {
+    if (f.method === 0) { out[name] = new TextDecoder().decode(f.bytes); continue; }
+    if (f.method !== 8) continue;
+    if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot read compressed .xlsx files. Use Chrome or Edge for the import.');
+    const ds = new DecompressionStream('deflate-raw');
+    const stream = new Blob([f.bytes]).stream().pipeThrough(ds);
+    out[name] = await new Response(stream).text();
+  }
+  return out;
+}
+
+function colToNum(ref) {
+  const m = /^([A-Z]+)/.exec(ref); if (!m) return 0;
+  let n = 0; for (const ch of m[1]) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+function excelDate(serial) {
+  const ms = Math.round((serial - 25569) * 86400000);
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+async function readXlsx(file) {
+  const zip = await unzip(await file.arrayBuffer());
+  const P = new DOMParser();
+  const shared = [];
+  if (zip['xl/sharedStrings.xml']) {
+    const d = P.parseFromString(zip['xl/sharedStrings.xml'], 'application/xml');
+    for (const si of d.getElementsByTagName('si')) {
+      let s = '';
+      for (const t of si.getElementsByTagName('t')) s += t.textContent;
+      shared.push(s);
+    }
+  }
+  // sheet name → target
+  const wb = P.parseFromString(zip['xl/workbook.xml'], 'application/xml');
+  const rels = P.parseFromString(zip['xl/_rels/workbook.xml.rels'] || '<x/>', 'application/xml');
+  const relMap = {};
+  for (const r of rels.getElementsByTagName('Relationship')) relMap[r.getAttribute('Id')] = r.getAttribute('Target');
+  // date-formatted style ids
+  const dateStyles = new Set();
+  if (zip['xl/styles.xml']) {
+    const st = P.parseFromString(zip['xl/styles.xml'], 'application/xml');
+    const customDate = new Set();
+    for (const nf of st.getElementsByTagName('numFmt')) {
+      const code = nf.getAttribute('formatCode') || '';
+      if (/[dmy]/i.test(code) && !/[#0]/.test(code.replace(/\[[^\]]*\]/g, ''))) customDate.add(nf.getAttribute('numFmtId'));
+    }
+    const xfs = st.getElementsByTagName('cellXfs')[0];
+    if (xfs) Array.from(xfs.getElementsByTagName('xf')).forEach((xf, i) => {
+      const id = xf.getAttribute('numFmtId');
+      if (customDate.has(id) || (+id >= 14 && +id <= 22) || (+id >= 45 && +id <= 47)) dateStyles.add(i);
+    });
+  }
+  const sheets = [];
+  for (const sh of wb.getElementsByTagName('sheet')) {
+    const rid = sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    let target = relMap[rid] || '';
+    if (target.startsWith('/')) target = target.slice(1); else if (!target.startsWith('xl/')) target = 'xl/' + target;
+    const xml = zip[target]; if (!xml) continue;
+    const d = P.parseFromString(xml, 'application/xml');
+    const rows = [];
+    for (const row of d.getElementsByTagName('row')) {
+      const cells = [];
+      for (const c of row.getElementsByTagName('c')) {
+        const idx = colToNum(c.getAttribute('r') || 'A1');
+        const t = c.getAttribute('t');
+        const sIdx = c.getAttribute('s');
+        const isEl = c.getElementsByTagName('is')[0];
+        const vEl = c.getElementsByTagName('v')[0];
+        let val = '';
+        if (t === 's' && vEl) val = shared[+vEl.textContent] || '';
+        else if (t === 'inlineStr' && isEl) val = isEl.textContent;
+        else if (vEl) {
+          val = vEl.textContent;
+          if (t !== 'str' && sIdx != null && dateStyles.has(+sIdx) && val !== '' && !isNaN(+val)) val = excelDate(+val);
+        }
+        cells[idx] = String(val).trim();
+      }
+      for (let i = 0; i < cells.length; i++) if (cells[i] === undefined) cells[i] = '';
+      rows.push(cells);
+    }
+    sheets.push({ name: sh.getAttribute('name'), rows });
+  }
+  return sheets;
+}
+
+/* ═══ Email parsing ══════════════════════════════════════ */
+function decodeQP(s) {
+  return s.replace(/=\r?\n/g, '').replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+function decodeMimeWords(s) {
+  return String(s || '').replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (m, cs, enc, txt) => {
+    try {
+      let bytes;
+      if (enc.toUpperCase() === 'B') bytes = b64d(txt);
+      else { const t = txt.replace(/_/g, ' '); const d = decodeQP(t); bytes = new Uint8Array([...d].map(c => c.charCodeAt(0))); }
+      return new TextDecoder(cs.toLowerCase().replace('windows-', 'windows-')).decode(bytes);
+    } catch (e) { return m; }
+  });
+}
+function utf8From(str) { try { return new TextDecoder('utf-8').decode(new Uint8Array([...str].map(c => c.charCodeAt(0) & 0xff))); } catch (e) { return str; } }
+
+function parseEml(text) {
+  const parts = splitMime(text);
+  const h = parts.headers;
+  const out = {
+    from: decodeMimeWords(h['from'] || ''),
+    to: decodeMimeWords(h['to'] || ''),
+    cc: decodeMimeWords(h['cc'] || ''),
+    subject: decodeMimeWords(h['subject'] || '(no subject)'),
+    date: h['date'] ? new Date(h['date']).toISOString() : null,
+    html: '', text: '', attachments: [],
+  };
+  walkMime(parts, out);
+  return out;
+}
+function splitMime(raw) {
+  const idx = raw.search(/\r?\n\r?\n/);
+  const headBlock = idx < 0 ? raw : raw.slice(0, idx);
+  const body = idx < 0 ? '' : raw.slice(idx).replace(/^\r?\n\r?\n/, '');
+  const headers = {};
+  headBlock.replace(/\r\n/g, '\n').split('\n').reduce((acc, line) => {
+    if (/^[ \t]/.test(line) && acc.last) { headers[acc.last] += ' ' + line.trim(); return acc; }
+    const m = /^([A-Za-z0-9-]+):\s*(.*)$/.exec(line);
+    if (m) { const k = m[1].toLowerCase(); headers[k] = headers[k] ? headers[k] + ', ' + m[2] : m[2]; acc.last = k; }
+    return acc;
+  }, {});
+  return { headers, body };
+}
+function walkMime(part, out) {
+  const ct = part.headers['content-type'] || 'text/plain';
+  const enc = (part.headers['content-transfer-encoding'] || '7bit').toLowerCase();
+  const bm = /boundary="?([^";]+)"?/i.exec(ct);
+  if (/^multipart\//i.test(ct) && bm) {
+    const b = '--' + bm[1];
+    const chunks = part.body.split(b).slice(1);
+    for (let c of chunks) {
+      if (/^--/.test(c.trim().slice(0, 2)) && c.trim().length < 6) continue;
+      c = c.replace(/^\r?\n/, '');
+      walkMime(splitMime(c), out);
+    }
+    return;
+  }
+  let body = part.body;
+  if (enc === 'base64') { try { body = new TextDecoder(charsetOf(ct)).decode(b64d(body.replace(/\s/g, ''))); } catch (e) { } }
+  else if (enc === 'quoted-printable') body = utf8From(decodeQP(body));
+  const disp = part.headers['content-disposition'] || '';
+  const fnm = /filename="?([^";]+)"?/i.exec(disp) || /name="?([^";]+)"?/i.exec(ct);
+  if (/attachment/i.test(disp) && fnm) {
+    out.attachments.push({ name: decodeMimeWords(fnm[1]), type: ct.split(';')[0].trim(), size: body.length });
+    return;
+  }
+  if (/text\/html/i.test(ct)) out.html = (out.html || '') + body;
+  else if (/text\/plain/i.test(ct)) out.text = (out.text || '') + body;
+}
+function charsetOf(ct) { const m = /charset="?([^";]+)"?/i.exec(ct || ''); return (m ? m[1] : 'utf-8').toLowerCase(); }
+
+/* ─── .msg (Outlook OLE compound file) ─────────────────── */
+function parseMsg(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  const sig = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+  for (let i = 0; i < 8; i++) if (u8[i] !== sig[i]) throw new Error('Not an Outlook .msg file.');
+  const sectorShift = dv.getUint16(30, true), miniShift = dv.getUint16(32, true);
+  const secSize = 1 << sectorShift, miniSize = 1 << miniShift;
+  const numFat = dv.getUint32(44, true);
+  const dirStart = dv.getUint32(48, true);
+  const miniCutoff = dv.getUint32(56, true);
+  const miniFatStart = dv.getUint32(60, true);
+  let difStart = dv.getUint32(68, true), numDif = dv.getUint32(72, true);
+  const off = s => (s + 1) * secSize;
+
+  const fatSectors = [];
+  for (let i = 0; i < Math.min(numFat, 109); i++) fatSectors.push(dv.getUint32(76 + i * 4, true));
+  let ds = difStart;
+  for (let n = 0; n < numDif && ds !== 0xFFFFFFFE && ds !== 0xFFFFFFFF; n++) {
+    const base = off(ds), per = secSize / 4 - 1;
+    for (let i = 0; i < per; i++) { const v = dv.getUint32(base + i * 4, true); if (v < 0xFFFFFFFA) fatSectors.push(v); }
+    ds = dv.getUint32(base + per * 4, true);
+  }
+  const fat = [];
+  for (const s of fatSectors) { const b = off(s); for (let i = 0; i < secSize / 4; i++) fat.push(dv.getUint32(b + i * 4, true)); }
+
+  function chain(start) { const out = []; let s = start, guard = 0; while (s < 0xFFFFFFFA && guard++ < 1e6) { out.push(s); s = fat[s]; } return out; }
+  function readChain(start, size) {
+    const secs = chain(start), out = new Uint8Array(secs.length * secSize);
+    secs.forEach((s, i) => out.set(u8.subarray(off(s), off(s) + secSize), i * secSize));
+    return size != null ? out.subarray(0, size) : out;
+  }
+
+  // directory
+  const dirBytes = readChain(dirStart);
+  const entries = [];
+  for (let p = 0; p + 128 <= dirBytes.length; p += 128) {
+    const nameLen = dirBytes[p + 64] | (dirBytes[p + 65] << 8);
+    if (nameLen <= 0) { entries.push(null); continue; }
+    let name = '';
+    for (let i = 0; i < nameLen - 2; i += 2) name += String.fromCharCode(dirBytes[p + i] | (dirBytes[p + i + 1] << 8));
+    const type = dirBytes[p + 66];
+    const dvv = new DataView(dirBytes.buffer, dirBytes.byteOffset + p, 128);
+    entries.push({ name, type, start: dvv.getUint32(116, true), size: dvv.getUint32(120, true) });
+  }
+  const root = entries.find(e => e && e.type === 5);
+  const miniFat = [];
+  { const mb = readChain(miniFatStart); const mdv = new DataView(mb.buffer, mb.byteOffset, mb.byteLength); for (let i = 0; i < mb.length / 4; i++) miniFat.push(mdv.getUint32(i * 4, true)); }
+  const miniStream = root ? readChain(root.start, root.size) : new Uint8Array(0);
+  function readEntry(e) {
+    if (e.size >= miniCutoff) return readChain(e.start, e.size);
+    const out = new Uint8Array(e.size); let s = e.start, o = 0, guard = 0;
+    while (s < 0xFFFFFFFA && o < e.size && guard++ < 1e6) {
+      const chunk = miniStream.subarray(s * miniSize, s * miniSize + miniSize);
+      out.set(chunk.subarray(0, Math.min(miniSize, e.size - o)), o); o += miniSize; s = miniFat[s];
+    }
+    return out;
+  }
+  function prop(tag) {
+    const e = entries.find(x => x && x.name.indexOf('__substg1.0_' + tag) === 0);
+    if (!e) return '';
+    const bytes = readEntry(e);
+    if (/001F$/i.test(tag)) return new TextDecoder('utf-16le').decode(bytes);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  const attachments = [];
+  entries.forEach(e => {
+    if (!e || e.type !== 1 || e.name.indexOf('__attach_version1.0') !== 0) return;
+    attachments.push({ name: '(attachment)', type: '', size: 0 });
+  });
+  const headers = prop('007D001F');
+  let date = null;
+  const dm = /^Date:\s*(.+)$/mi.exec(headers || '');
+  if (dm) { const d = new Date(dm[1]); if (!isNaN(d)) date = d.toISOString(); }
+  const html = prop('1013001F') || '';
+  return {
+    subject: prop('0037001F') || '(no subject)',
+    from: [prop('0C1A001F'), prop('5D01001F') || prop('0C1F001F')].filter(Boolean).join(' <') + (prop('5D01001F') || prop('0C1F001F') ? '>' : ''),
+    to: prop('0E04001F') || '',
+    cc: prop('0E03001F') || '',
+    date, html, text: prop('1000001F') || '',
+    attachments,
+  };
+}
+
+/* ─── sanitize pasted / imported HTML ──────────────────── */
+const ALLOWED = new Set(['P', 'DIV', 'SPAN', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'A', 'UL', 'OL', 'LI', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE', 'PRE', 'CODE', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TD', 'TH', 'IMG', 'HR', 'FONT', 'SUB', 'SUP', 'MARK']);
+function cleanHtml(html) {
+  const doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
+  const root = doc.body.firstChild;
+  (function walk(node) {
+    Array.from(node.childNodes).forEach(ch => {
+      if (ch.nodeType === 8) { ch.remove(); return; }
+      if (ch.nodeType !== 1) return;
+      if (!ALLOWED.has(ch.tagName)) {
+        if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'FORM', 'INPUT'].includes(ch.tagName)) { ch.remove(); return; }
+        const rep = doc.createElement('div');
+        while (ch.firstChild) rep.appendChild(ch.firstChild);
+        ch.replaceWith(rep); walk(rep); return;
+      }
+      Array.from(ch.attributes).forEach(a => {
+        const n = a.name.toLowerCase();
+        const keep = (n === 'href' && ch.tagName === 'A') || (n === 'src' && ch.tagName === 'IMG') ||
+          (n === 'colspan' || n === 'rowspan') || (n === 'style' && /background|color|font-weight|text-align/.test(a.value));
+        if (!keep || /^javascript:/i.test(a.value)) ch.removeAttribute(a.name);
+      });
+      if (ch.tagName === 'IMG' && !/^data:image\//i.test(ch.getAttribute('src') || '')) ch.remove();
+      if (ch.tagName === 'A') { ch.setAttribute('target', '_blank'); ch.setAttribute('rel', 'noopener'); }
+      walk(ch);
+    });
+  })(root);
+  return root.innerHTML;
+}
+function textToHtml(t) {
+  return '<p>' + esc(t || '').split(/\n{2,}/).join('</p><p>').replace(/\n/g, '<br>') + '</p>';
+}
+
+window.__TPL__ = {"bio":{"title":"BS Biology","requirements":[{"id":"bio107","year":"Year 1","term":"Fall","code":"BIO 107","name":"General Biology I","credits":3.0,"tags":["fall only","required"],"desc":"Intended for science majors, this course focuses on introductory cellular and molecular biology. Concepts include cellular biochemistry, metabolism, and genetics."},{"id":"bio117","year":"Year 1","term":"Fall","code":"BIO 117","name":"Gen Biology Lab I","credits":1.0,"tags":["fall only","required"],"desc":"Students apply scientific thinking and basic technical skills to the study of cells. Methods include microscopy, spectroscopy, and chromatography, as well as the collection, graphing, and interpretation of data."},{"id":"chem105","year":"Year 1","term":"Fall","code":"CHEM 105","name":"General Chemistry I","credits":4.0,"tags":["required"],"desc":"First course of a two-semester sequence for science and engineering majors. Topics include stoichiometry, states of matter, chemical reactions and energy, atomic structure, periodic trends, and chemical bonding. Lab experiments develop b..."},{"id":"math-y1","year":"Year 1","term":"Fall","code":"MATH 109/123","name":"Precalculus or Calc I","credits":3.0,"tags":["alt. option"],"desc":"MATH 109 (Precalculus) covers algebraic, exponential, and trigonometric functions \u2014 no prerequisites. MATH 123 (Calculus I) covers differential calculus with life-science applications \u2014 requires placement. Take MATH 123 directly if placed."},{"id":"blue101","year":"Year 1","term":"Fall","code":"BLUE 101","name":"First-Year Seminar","credits":1.0,"tags":[],"desc":"No prerequisites. Required of all first-semester students."},{"id":"engl132","year":"Year 1","term":"Fall","code":"ENGL 132","name":"English Composition I","credits":3.0,"tags":["required"],"desc":"Foundational academic writing course. Develops research, argumentation, and composition skills, including analytic reading of literary texts in cultural context."},{"id":"bio108","year":"Year 1","term":"Spring","code":"BIO 108","name":"General Biology II","credits":3.0,"tags":["spring only","required"],"desc":"Second semester of the two-semester introductory biology sequence. Focuses on phylogenetic relationships and structural/functional characteristics of the three life domains: Archaea, Bacteria, and Eukarya."},{"id":"bio118","year":"Year 1","term":"Spring","code":"BIO 118","name":"Gen Biology Lab II","credits":1.0,"tags":["spring only","required"],"desc":"Students examine the differences between various types of organisms and conduct inquiry-based experiments using an organismal model system. Also covers applicable terminology related to organismal biology."},{"id":"chem106","year":"Year 1","term":"Spring","code":"CHEM 106","name":"General Chemistry II","credits":4.0,"tags":["spring only","required"],"desc":"An extension of CHEM 105 covering properties of solutions, chemical equilibria, reaction kinetics, acid-base chemistry, thermodynamics, and electrochemistry. Lab exercises include use of instrumentation to monitor reactions and character..."},{"id":"engl133","year":"Year 1","term":"Spring","code":"ENGL 133","name":"English Composition II","credits":3.0,"tags":["required"],"desc":"Continuation of ENGL 132. Develops advanced academic writing and research skills."},{"id":"math121","year":"Year 1","term":"Spring","code":"MATH 121","name":"Stats & Probability","credits":3.0,"tags":["required"],"desc":"Introduction to descriptive and inferential statistics, probability, hypothesis testing, and data interpretation. Useful for research design and data analysis throughout the major."},{"id":"bio213","year":"Year 2","term":"Fall","code":"BIO 213","name":"Ecology","credits":3.0,"tags":["fall only","required"],"desc":"Study of the interaction of plants and animals with the physical environment. Topics include population dynamics, food chains, energy flow, and adaptations."},{"id":"chem209","year":"Year 2","term":"Fall","code":"CHEM 209","name":"Organic Chemistry I","credits":3.0,"tags":["fall only","required"],"desc":"Introduction to basic principles of organic chemistry. Emphasizes functional group recognition, structure\u2013property relationships, alkenes, alkynes, alkyl halides, stereochemistry, reaction mechanisms, and an introduction to IR and NMR sp..."},{"id":"chem219","year":"Year 2","term":"Fall","code":"CHEM 219","name":"Organic Chem Lab I","credits":1.0,"tags":["fall only","required"],"desc":"Laboratory for CHEM 209. Develops skills in planning, conducting, and interpreting organic chemistry experiments. Introduces synthetic organic chemistry techniques and characterization by chemical and instrumental methods."},{"id":"bio201","year":"Year 2","term":"Spring","code":"BIO 201","name":"Plant Biology","credits":4.0,"tags":["spring only","required"],"desc":"Students examine various kinds of plants including their structure, internal workings, ecological relationships, and evolution. Includes data collection, analysis, and interpretation. Three class hours and three-hour lab."},{"id":"chem210","year":"Year 2","term":"Spring","code":"CHEM 210","name":"Organic Chemistry II","credits":3.0,"tags":["spring only","required"],"desc":"Continuation of CHEM 209. Covers alcohols, ethers, aromatics, carboxylic acids, aldehydes, and ketones. Emphasizes complex reaction mechanisms, synthesis design, and spectroscopic structure determination."},{"id":"chem220","year":"Year 2","term":"Spring","code":"CHEM 220","name":"Organic Chem Lab II","credits":1.0,"tags":["spring only","required"],"desc":"Continuation of CHEM 219. Emphasis on synthesis and subsequent characterization and identification of organic compounds by chemical and instrumental methods. Four-hour lab."},{"id":"bio306","year":"Year 3","term":"Fall","code":"BIO 306","name":"Genetics","credits":4.0,"tags":["fall only","bottleneck"],"desc":"A study of classical organismal heredity and its molecular basis. Topics include Mendelian principles, gene structure and function, and changes in genetic material. Three class hours and three-hour lab."},{"id":"bio-elec-y3f","year":"Year 3","term":"Fall","code":"BIO 2XX/4XX","name":"Biology Elective","credits":3.0,"tags":["required"],"desc":"Choose from BIO 200\u2013400-level electives (see elective section below). HS 315, HS 320, and HS 412 also count toward this requirement. Prerequisites vary."},{"id":"phys-y3","year":"Year 3","term":"Fall","code":"PHYS 123/110/101","name":"Physics I (choose one)","credits":0,"tags":["3\u20134 cr","alt. option"],"desc":"PHYS 123 (4 cr, fall only): calculus-based mechanics, thermodynamics, and nuclear physics with medical applications. Requires MATH 123 or equivalent. Unlocks PHYS 124. PHYS 110 (3 cr, spring only): algebra-based physics applied to the hu..."},{"id":"bio310","year":"Year 3","term":"Spring","code":"BIO 310","name":"Cell Biology","credits":4.0,"tags":["spring only","required"],"desc":"Students examine cellular structure and function including the molecular organization of cell organelles. Covers key concepts with written and oral communication components. Data collection, analysis, and interpretation are practiced in ..."},{"id":"phys-y3s","year":"Year 3","term":"Spring","code":"PHYS 124/15X","name":"Physics II (choose one)","credits":0,"tags":["3\u20134 cr","alt. option"],"desc":"PHYS 124 (4 cr, spring only): calculus-based electricity and magnetism, optics, and modern physics with life-science applications. Requires PHYS 123. PHYS 15X: an alternate physics elective for students who took PHYS 110 or 101 in lieu o..."},{"id":"bio-elec-y4f","year":"Year 4","term":"Fall","code":"BIO 2XX/4XX","name":"Biology Elective","credits":3.0,"tags":["required"],"desc":"Choose from BIO 200\u2013400-level electives or HS 315, HS 320, HS 412 (see elective section below). Prerequisites vary. Combined with the Y3 fall elective (3 cr) and Y4 spring elective (4 cr), this completes the 7-cr BIO elective requirement..."},{"id":"bio455","year":"Year 4","term":"Spring","code":"BIO 455","name":"Evolution","credits":3.0,"tags":["spring only","required"],"desc":"Study of organic evolution and its theoretical basis. Develops three major themes: the history of evolutionary thought, the mechanisms of evolution, and highlights in the history of life."},{"id":"bio470","year":"Year 4","term":"Spring","code":"BIO 470","name":"Seminar in Biology","credits":1.0,"tags":["capstone"],"desc":"Capstone experience for biology majors. Students read, discuss, and present articles from the primary literature related to a particular theme in biology."},{"id":"bio-elec-y4s","year":"Year 4","term":"Spring","code":"BIO 2XX/4XX","name":"Biology Elective","credits":4.0,"tags":["required"],"desc":"Combined with the 3-cr BIO elective in Y3 fall, this completes the 7-cr BIO elective requirement. Choose from BIO 200\u2013400-level courses or HS 315, HS 320, HS 412 (see elective section below)."}],"gbd":[{"id":"gbd-blue101","group":"BLUE & GOLD","code":"BLUE 101","name":"Belonging & Learning in the University Environment","creditsText":"1 cr \u00b7 Required \u00b7 First semester","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-gold","group":"BLUE & GOLD","code":"GOLD","name":"Gateway to Opportunity, Learning & Discovery","creditsText":"3 cr \u00b7 First year \u00b7 Counts as one Trail course","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-engl132","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 132","name":"Written Communication I","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-engl133","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 133","name":"Written Communication II","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-multimodal","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"Multimodal Comm.","name":"Multimodal Communication","creditsText":"3\u20134 cr \u00b7 1 course required","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-smt-bio107","group":"Science, Mathematics & Technology Trail 3\u20134 courses \u00b7 fully satisfied by major core","code":"BIO 107 + 117","name":"Scientific Reasoning \u2014 General Biology I w/ Lab","creditsText":"4 cr \u00b7 Satisfies SMT scientific reasoning \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-math","group":"Science, Mathematics & Technology Trail 3\u20134 courses \u00b7 fully satisfied by major core","code":"MATH 109/123","name":"Mathematical & Quantitative Reasoning","creditsText":"3 cr \u00b7 Satisfies SMT math/quantitative \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-chem105","group":"Science, Mathematics & Technology Trail 3\u20134 courses \u00b7 fully satisfied by major core","code":"CHEM 105","name":"Additional SMT \u2014 General Chemistry I","creditsText":"4 cr \u00b7 Satisfies 3rd SMT course \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-ce-1","group":"Creative Expression Trail at least 1 course required","code":"Creative Expression","name":"Creative Expression Trail \u2014 Course 1","creditsText":"3+ cr \u00b7 Art, film, music, theater, or qualifying English/history","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-1","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 1","name":"Citizenship, Identity & Community \u2014 Course 1","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-2","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 2","name":"Citizenship, Identity & Community \u2014 Course 2","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-ss-1","group":"Social Systems Trail at least 1 course required","code":"Social Systems","name":"Social Systems Trail \u2014 Course 1","creditsText":"3+ cr \u00b7 Criminal justice, economics, psychology, sociology, or qualifying courses","fixed":false,"needsCourse":true,"predone":false}],"gbdPredone":["gbd-blue101","gbd-engl132","gbd-engl133","gbd-smt-bio107","gbd-smt-math","gbd-smt-chem105","gbd-capstone"],"electiveCreditsRequired":26.0,"electiveRows":12},"hsci":{"title":"BS Health Sciences","requirements":[{"id":"bio107","year":"Year 1","term":"Fall","code":"BIO 107","name":"General Biology I","credits":3.0,"tags":["fall only","required"],"desc":"Intended for science majors, this course focuses on introductory cellular and molecular biology. Concepts include cellular biochemistry, metabolism, and genetics."},{"id":"bio117","year":"Year 1","term":"Fall","code":"BIO 117","name":"Gen Biology Lab I","credits":1.0,"tags":["fall only","required"],"desc":"Students apply scientific thinking and basic technical skills to the study of cells. Methods include microscopy, spectroscopy, and chromatography, as well as data collection and interpretation."},{"id":"chem105","year":"Year 1","term":"Fall","code":"CHEM 105","name":"General Chemistry I","credits":4.0,"tags":["required"],"desc":"First course of a two-semester sequence for science and engineering majors. Topics include stoichiometry, states of matter, chemical reactions and energy, atomic structure, and chemical bonding. Laboratory experiments complement lecture."},{"id":"math123","year":"Year 1","term":"Fall","code":"MATH 123","name":"Calculus I (Life Sci.)","credits":3.0,"tags":["required"],"desc":"Differential calculus with applications to biology and the life sciences. Prereq: placement test."},{"id":"engl132","year":"Year 1","term":"Fall","code":"ENGL 132","name":"English Composition I","credits":3.0,"tags":["required"],"desc":"Foundational academic writing course. Develops research, argumentation, and composition skills, including analytic reading and evidence-based writing."},{"id":"blue101","year":"Year 1","term":"Fall","code":"BLUE 101","name":"First-Year Seminar","credits":1.0,"tags":[],"desc":"No prerequisites. Required of all first-semester students (exemption for 15+ transfer credits)."},{"id":"bio108","year":"Year 1","term":"Spring","code":"BIO 108","name":"General Biology II","credits":3.0,"tags":["spring only","required"],"desc":"Second semester of the two-semester introductory biology sequence. Focuses on phylogenetic relationships and structural/functional characteristics of the three life domains: Archaea, Bacteria, and Eukarya."},{"id":"bio118","year":"Year 1","term":"Spring","code":"BIO 118","name":"Gen Biology Lab II","credits":1.0,"tags":["spring only","required"],"desc":"Students examine differences between organism types and conduct inquiry-based experiments using an organismal model system, using and applying terminology related to organismal biology."},{"id":"chem106","year":"Year 1","term":"Spring","code":"CHEM 106","name":"General Chemistry II","credits":4.0,"tags":["spring only","required"],"desc":"An extension of CHEM 105 covering properties of solutions, chemical equilibria, reaction kinetics, acid-base chemistry, thermodynamics, and electrochemistry. Lab exercises include use of instrumentation to monitor reactions and character..."},{"id":"engl133","year":"Year 1","term":"Spring","code":"ENGL 133","name":"English Composition II","credits":3.0,"tags":["required"],"desc":"Continuation of ENGL 132. Develops advanced academic writing, research skills, and critical analysis."},{"id":"bio215","year":"Year 2","term":"Fall","code":"BIO 215","name":"Anatomy & Physiology I","credits":4.0,"tags":["fall only","required"],"desc":"Comprehensive study of human anatomy and physiology at the cell, tissue, and organ-system levels. Covers anatomical terminology, basic chemistry of life, and the integumentary, skeletal, muscular, nervous, and endocrine systems. Three cl..."},{"id":"chem209","year":"Year 2","term":"Fall","code":"CHEM 209","name":"Organic Chemistry I","credits":3.0,"tags":["fall only","required"],"desc":"Introduction to the basic principles of organic chemistry. Emphasizes functional group recognition, structure\u2013property relationships, alkenes, alkynes, alkyl halides, stereochemistry, reaction mechanisms, and an introduction to IR and NM..."},{"id":"chem219","year":"Year 2","term":"Fall","code":"CHEM 219","name":"Organic Chem Lab I","credits":1.0,"tags":["fall only","required"],"desc":"Laboratory for CHEM 209. Students develop skills in planning, conducting, and interpreting experiments in synthetic organic chemistry, including characterization by chemical and instrumental methods."},{"id":"psy101","year":"Year 2","term":"Fall","code":"PSY 101","name":"Intro Psychology","credits":3.0,"tags":["required"],"desc":"Survey of primary psychology topics including its historical evolution, aims, and research methods. Covers biopsychosocial bases of thought, feelings, and behavior, social determinants, and applications of psychology in various fields of..."},{"id":"math121","year":"Year 2","term":"Fall","code":"MATH 121","name":"Stats & Probability","credits":3.0,"tags":["required"],"desc":"Introduction to descriptive and inferential statistics, probability, hypothesis testing, and data interpretation. Useful for research design and data analysis throughout the major."},{"id":"bio216","year":"Year 2","term":"Spring","code":"BIO 216","name":"Anatomy & Physiology II","credits":4.0,"tags":["spring only","required"],"desc":"A continuation of BIO 215. Covers the structure and function of the skeletal, muscular, cardiovascular, immune, digestive, respiratory, urinary, and reproductive systems. Three class hours and three lab hours."},{"id":"chem210","year":"Year 2","term":"Spring","code":"CHEM 210","name":"Organic Chemistry II","credits":3.0,"tags":["spring only","required"],"desc":"Continuation of CHEM 209. Covers alcohols, aromatics, carboxylic acids, aldehydes, and ketones. Emphasizes complex reaction mechanisms, synthesis design, and spectroscopic structure determination."},{"id":"chem220","year":"Year 2","term":"Spring","code":"CHEM 220","name":"Organic Chem Lab II","credits":1.0,"tags":["spring only","required"],"desc":"Continuation of CHEM 219. Emphasis on synthesis and subsequent characterization and identification of organic compounds by chemical and instrumental methods. Four-hour lab."},{"id":"psy201","year":"Year 2","term":"Spring","code":"PSY 201","name":"Developmental Psych","credits":3.0,"tags":["required"],"desc":"Study of behavior change from infancy through adulthood. Examines prenatal development and the development of motor, perceptual, social, emotional, and cognitive behavior. Topics include developmental disabilities, parenting, and education."},{"id":"phys123","year":"Year 3","term":"Fall","code":"PHYS 123","name":"Physics of Life Sci. I","credits":4.0,"tags":["fall only","required"],"desc":"Calculus-based introduction to mechanics, thermodynamics, and nuclear physics with applications to biology and the life sciences. Covers kinematics, statics, energy, momentum, Newton's laws, fluid motion, heat, thermodynamic laws, and nu..."},{"id":"bio306","year":"Year 3","term":"Fall","code":"BIO 306","name":"Genetics","credits":4.0,"tags":["fall only","bottleneck"],"desc":"A study of classical organismal heredity and its molecular basis. Topics include Mendelian principles, gene structure and function, and changes in genetic material. Three class hours and three-hour lab."},{"id":"ph208","year":"Year 3","term":"Fall","code":"PH 208/231","name":"Ethics / Biomed Ethics","credits":3.0,"tags":["required"],"desc":"PH 208 is a general ethics course; PH 231 focuses specifically on biomedical ethics, examining ethical issues in medicine, research, and health care. Both satisfy the requirement. No prerequisites listed."},{"id":"phys124","year":"Year 3","term":"Spring","code":"PHYS 124","name":"Physics of Life Sci. II","credits":4.0,"tags":["spring only","required"],"desc":"Calculus-based introduction to electricity and magnetism, geometric and wave optics, and modern physics with life-science applications. Covers electric forces and potentials, electromagnetic induction, optics, and modern ideas on the str..."},{"id":"hs2xx","year":"Year 3","term":"Spring","code":"HS 2XX","name":"HS Elective","credits":3.0,"tags":[],"desc":""},{"id":"wic","year":"Year 3","term":"Spring","code":"WIC 2XX","name":"Writing Intensive","credits":3.0,"tags":["WIC"],"desc":""},{"id":"hs3xxa","year":"Year 4","term":"Fall","code":"HS 3XX","name":"HS Elective","credits":3.0,"tags":[],"desc":"Choose from approved elective list below. Prerequisites vary by course selected."},{"id":"hs3xxc","year":"Year 4","term":"Fall","code":"HS 3XX","name":"HS Elective","credits":3.0,"tags":[],"desc":"Choose from approved elective list below. Prerequisites vary by course selected."},{"id":"chem314","year":"Year 4","term":"Spring","code":"CHEM 314","name":"Biochemistry","credits":3.0,"tags":["spring only","WIC","required"],"desc":"Exploration of the chemistry of biological macromolecules emphasizing structure, organization, and function of proteins, nucleic acids, lipids, and polysaccharides. Also covers enzyme kinetics, major metabolic pathways, and bioenergetics..."},{"id":"chem324","year":"Year 4","term":"Spring","code":"CHEM 324","name":"Biochemistry Lab","credits":1.0,"tags":["spring only","WIC","required"],"desc":"Laboratory exercises introduce modern techniques for the separation, purification, and characterization of biological macromolecules. Taken concurrently with CHEM 314. Satisfies one WIC requirement."},{"id":"psy326","year":"Year 4","term":"Spring","code":"PSY 326","name":"Abnormal Psychology","credits":3.0,"tags":["required"],"desc":"The concept of abnormality is considered from a perspective that views contributions of both constitutional factors and life experiences to behavioral disorders. Covers major disorder categories, relevant research, theoretical orientatio..."},{"id":"hs470","year":"Year 4","term":"Spring","code":"HS 470","name":"Seminar in Health Sci.","credits":1.0,"tags":["capstone"],"desc":"Capstone experience for health sciences majors. Students will read, discuss, and present articles from the primary literature related to a particular theme in health science."}],"gbd":[{"id":"gbd-blue101","group":"BLUE & GOLD","code":"BLUE 101","name":"Belonging & Learning in the University Environment","creditsText":"1 cr \u00b7 Required \u00b7 First semester","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-gold","group":"BLUE & GOLD","code":"GOLD","name":"Gateway to Opportunity, Learning & Discovery","creditsText":"3 cr \u00b7 First year \u00b7 Counts as one Trail course","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-engl132","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 132","name":"Written Communication I","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-engl133","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 133","name":"Written Communication II","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-multimodal","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"Multimodal Comm.","name":"Multimodal Communication","creditsText":"3\u20134 cr \u00b7 1 course required","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-smt-bio107","group":"Science, Mathematics & Technology Trail 3\u20134 courses required","code":"BIO 107 + 117","name":"Scientific Reasoning \u2014 General Biology I w/ Lab","creditsText":"4 cr \u00b7 Satisfies SMT scientific reasoning \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-math123","group":"Science, Mathematics & Technology Trail 3\u20134 courses required","code":"MATH 123","name":"Mathematical & Quantitative Reasoning","creditsText":"3 cr \u00b7 Satisfies SMT math/quantitative \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-chem105","group":"Science, Mathematics & Technology Trail 3\u20134 courses required","code":"CHEM 105","name":"Additional SMT \u2014 General Chemistry I","creditsText":"4 cr \u00b7 Satisfies 3rd SMT course requirement \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-ce-1","group":"Creative Expression Trail at least 1 course required","code":"Creative Expression","name":"Creative Expression Trail \u2014 Course 1","creditsText":"3+ cr \u00b7 Art, film, music, theater, or qualifying English/history","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-1","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 1","name":"Citizenship, Identity & Community \u2014 Course 1","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-2","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 2","name":"Citizenship, Identity & Community \u2014 Course 2","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-ss-psy101","group":"Social Systems Trail at least 1 course required","code":"PSY 101","name":"Social Systems \u2014 Intro to Psychology","creditsText":"3 cr \u00b7 Satisfies Social Systems trail \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true}],"gbdPredone":["gbd-blue101","gbd-engl132","gbd-engl133","gbd-smt-bio107","gbd-smt-math123","gbd-smt-chem105","gbd-ss-psy101","gbd-capstone","gbd-wic2"],"electiveCreditsRequired":22.0,"electiveRows":12},"hst":{"title":"BS Health Studies","requirements":[{"id":"bio107","year":"Year 1","term":"Fall","code":"BIO 107","name":"General Biology I","credits":3.0,"tags":["fall only","required"],"desc":"Intended for science majors, this course focuses on introductory cellular and molecular biology. Concepts include cellular biochemistry, metabolism, and genetics."},{"id":"bio117","year":"Year 1","term":"Fall","code":"BIO 117","name":"Gen Biology Lab I","credits":1.0,"tags":["fall only","required"],"desc":"Students apply scientific thinking and basic technical skills to the study of cells. Methods include microscopy, spectroscopy, and chromatography, as well as data collection and interpretation."},{"id":"math1xx","year":"Year 1","term":"Fall","code":"MATH 1XX","name":"Math placement course","credits":3.0,"tags":["alt. option"],"desc":"MATH 120 (Intro Statistics for Arts & Sciences) and MATH 121 (Probability & Statistics) both satisfy the HST statistics requirement; MATH 120 is the more accessible option. If placed below calculus, take MATH 109 (Precalculus) first."},{"id":"engl132","year":"Year 1","term":"Fall","code":"ENGL 132","name":"English Composition I","credits":3.0,"tags":["required"],"desc":"Foundational academic writing course. Develops research, argumentation, and composition skills."},{"id":"blue101","year":"Year 1","term":"Fall","code":"BLUE 101","name":"First-Year Seminar","credits":1.0,"tags":[],"desc":"Introductory seminar for first-year students. No prerequisites. Required of all first-semester students."},{"id":"comm102","year":"Year 1","term":"Fall","code":"COMM 102","name":"Intro to Public Speaking","credits":3.0,"tags":["required"],"desc":"Develops skills in researching, composing, and presenting speeches, and in adapting principles of public speaking to different situations and contexts."},{"id":"bio108","year":"Year 1","term":"Spring","code":"BIO 108","name":"General Biology II","credits":3.0,"tags":["spring only","required"],"desc":"Focuses on phylogenetic relationships and structural/functional characteristics of the three life domains: Archaea, Bacteria, and Eukarya."},{"id":"bio118","year":"Year 1","term":"Spring","code":"BIO 118","name":"Gen Biology Lab II","credits":1.0,"tags":["spring only","required"],"desc":"Students examine differences between organism types and conduct inquiry-based experiments using an organismal model system."},{"id":"chem105","year":"Year 1","term":"Spring","code":"CHEM 105","name":"General Chemistry I","credits":4.0,"tags":["required"],"desc":"First course of a two-semester sequence for science majors. Topics include stoichiometry, states of matter, chemical reactions and energy, atomic structure, and chemical bonding. Lab experiments develop basic chemistry skills."},{"id":"engl133","year":"Year 1","term":"Spring","code":"ENGL 133","name":"English Composition II","credits":3.0,"tags":["required"],"desc":"Continuation of ENGL 132. Develops advanced academic writing and research skills."},{"id":"chem-y2","year":"Year 2","term":"Fall","code":"CHEM 111 or 106","name":"Chemistry II (choose one)","credits":4.0,"tags":["alt. option"],"desc":"CHEM 111 (Principles of General, Organic & Biochemistry) is the standard Health Studies path \u2014 fall only, broader and health-career-focused. CHEM 106 (General Chemistry II) is more rigorous and required if planning to switch to Health Sc..."},{"id":"psy101","year":"Year 2","term":"Fall","code":"PSY 101","name":"Intro Psychology","credits":3.0,"tags":["required"],"desc":"Survey of primary psychology topics including historical evolution, aims, and research methods. Covers biopsychosocial bases of thought, feelings, and behavior, social determinants, and applications of psychology."},{"id":"bio215","year":"Year 2","term":"Fall","code":"BIO 215","name":"Anatomy & Physiology I","credits":4.0,"tags":["fall only","required"],"desc":"Comprehensive study of human anatomy and physiology at the cell, tissue, and organ-system levels. Covers anatomical terminology, basic chemistry of life, and the integumentary, skeletal, muscular, nervous, and endocrine systems. Three cl..."},{"id":"math-stats","year":"Year 2","term":"Spring","code":"MATH 120/121","name":"Statistics (choose one)","credits":3.0,"tags":["required","alt. option"],"desc":"MATH 120 (Intro Statistics for Arts & Sciences) is designed for non-calculus students and covers descriptive/inferential statistics, hypothesis testing, and data visualization. MATH 121 (Introductory Probability & Statistics) is a slight..."},{"id":"psy201","year":"Year 2","term":"Spring","code":"PSY 201","name":"Developmental Psychology","credits":3.0,"tags":["required"],"desc":"Study of behavior change from infancy through adulthood. Examines prenatal development and the development of motor, perceptual, social, emotional, and cognitive behavior."},{"id":"bio216","year":"Year 2","term":"Spring","code":"BIO 216","name":"Anatomy & Physiology II","credits":4.0,"tags":["spring only","required"],"desc":"A continuation of BIO 215. Covers the structure and function of the skeletal, muscular, cardiovascular, immune, digestive, respiratory, urinary, and reproductive systems. Three class hours and three lab hours."},{"id":"ph208","year":"Year 3","term":"Fall","code":"PH 208 or 231","name":"Ethics / Biomed Ethics","credits":3.0,"tags":["required"],"desc":"PH 208 is a general ethics course; PH 231 focuses specifically on biomedical ethics, examining ethical issues in medicine, research, and health care. No prerequisites listed."},{"id":"psy3xx-1","year":"Year 3","term":"Spring","code":"PSY 3XX","name":"Psychology Elective","credits":3.0,"tags":["required"],"desc":"First of two required 300-level psychology electives. PSY 101 is typically a prerequisite. See psychology elective pool in the elective section below."},{"id":"psy3xx-2","year":"Year 4","term":"Fall","code":"PSY 3XX","name":"Psychology Elective","credits":3.0,"tags":["required"],"desc":"Second of two required 300-level psychology electives. PSY 101 is typically a prerequisite."},{"id":"hs471","year":"Year 4","term":"Spring","code":"HS 471","name":"Seminar in Health Studies","credits":3.0,"tags":["capstone"],"desc":"Capstone experience for Health Studies majors. Students read, discuss, and present articles from the primary literature related to a particular theme in health science. Broader and more substantial than HS 470 (the Health Sciences capsto..."}],"gbd":[{"id":"gbd-blue101","group":"BLUE & GOLD","code":"BLUE 101","name":"Belonging & Learning in the University Environment","creditsText":"1 cr \u00b7 Required \u00b7 First semester","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-gold","group":"BLUE & GOLD","code":"GOLD","name":"Gateway to Opportunity, Learning & Discovery","creditsText":"3 cr \u00b7 First year \u00b7 Counts as one Trail course","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-engl132","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 132","name":"Written Communication I","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-engl133","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"ENGL 133","name":"Written Communication II","creditsText":"3 cr \u00b7 Required \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-multimodal","group":"Modern Communication 9\u201310 cr required (3 courses)","code":"COMM 102","name":"Multimodal Communication \u2014 Intro to Public Speaking","creditsText":"3 cr \u00b7 Satisfies Multimodal Communication requirement \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-bio107","group":"Science, Mathematics & Technology Trail 3 courses \u00b7 fully satisfied by major core","code":"BIO 107 + 117","name":"Scientific Reasoning \u2014 General Biology I w/ Lab","creditsText":"4 cr \u00b7 Satisfies SMT scientific reasoning \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-math","group":"Science, Mathematics & Technology Trail 3 courses \u00b7 fully satisfied by major core","code":"MATH 1XX","name":"Mathematical & Quantitative Reasoning","creditsText":"3 cr \u00b7 Satisfies SMT math/quantitative \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-smt-chem105","group":"Science, Mathematics & Technology Trail 3 courses \u00b7 fully satisfied by major core","code":"CHEM 105","name":"Additional SMT \u2014 General Chemistry I","creditsText":"4 cr \u00b7 Satisfies 3rd SMT course \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true},{"id":"gbd-ce-1","group":"Creative Expression Trail at least 1 course required","code":"Creative Expression","name":"Creative Expression Trail \u2014 Course 1","creditsText":"3+ cr \u00b7 Art, film, music, theater, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-1","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 1","name":"Citizenship, Identity & Community \u2014 Course 1","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-cic-2","group":"Citizenship, Identity & Community Trail at least 2 courses required","code":"CIC \u2014 Course 2","name":"Citizenship, Identity & Community \u2014 Course 2","creditsText":"3+ cr \u00b7 History, global cultures, language, or qualifying courses","fixed":false,"needsCourse":true,"predone":false},{"id":"gbd-ss-psy101","group":"Social Systems Trail at least 1 course required","code":"PSY 101","name":"Social Systems \u2014 Introduction to Psychology","creditsText":"3 cr \u00b7 Satisfies Social Systems trail \u00b7 In major core","fixed":true,"needsCourse":false,"predone":true}],"gbdPredone":["gbd-blue101","gbd-engl132","gbd-engl133","gbd-multimodal","gbd-smt-bio107","gbd-smt-math","gbd-smt-chem105","gbd-ss-psy101","gbd-capstone"],"electiveCreditsRequired":35.0,"electiveRows":15}};
+/* ═══════════════════════════════════════════════════════════
+   Advising Hub — interface
+   ═══════════════════════════════════════════════════════════ */
+
+const S = { view: 'dash', studentId: null, tab: 'record', filter: 'all', q: '', sort: 'name', showArchived: false };
+let TPL = window.__TPL__ || {};           // built-in program templates (injected at build)
+let idleTimer = null;
+
+/* ─── toast ─────────────────────────────────────────────── */
+function toast(msg, kind) {
+  const box = $('#toasts');
+  const t = document.createElement('div');
+  t.className = 'toast' + (kind ? ' ' + kind : '');
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, kind === 'bad' ? 6000 : 3200);
+}
+
+/* ─── modal ─────────────────────────────────────────────── */
+function modal(opts) {
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal${opts.wide ? ' wide' : ''}">
+    <div class="modal-head"><h2>${esc(opts.title)}</h2><button class="x-btn" data-x>&times;</button></div>
+    <div class="modal-body"></div>
+    <div class="modal-foot"></div></div>`;
+  $('.modal-body', bg).innerHTML = opts.body || '';
+  const foot = $('.modal-foot', bg);
+  (opts.buttons || []).forEach(b => {
+    const el = document.createElement('button');
+    el.className = 'btn' + (b.kind ? ' ' + b.kind : '');
+    el.textContent = b.label;
+    el.onclick = () => b.onClick ? b.onClick(bg, close) : close();
+    foot.appendChild(el);
+  });
+  function close() { bg.remove(); document.removeEventListener('keydown', key); }
+  function key(e) { if (e.key === 'Escape') close(); }
+  bg.querySelector('[data-x]').onclick = close;
+  bg.onclick = e => { if (e.target === bg && !opts.sticky) close(); };
+  document.addEventListener('keydown', key);
+  document.body.appendChild(bg);
+  if (opts.onOpen) opts.onOpen(bg, close);
+  const f = bg.querySelector('input,textarea,select');
+  if (f) f.focus();
+  return { el: bg, close };
+}
+function confirmBox(title, msg, okLabel, onOk, kind) {
+  modal({
+    title, body: `<p style="font-size:13.5px;line-height:1.6">${msg}</p>`,
+    buttons: [{ label: 'Cancel' }, { label: okLabel, kind: kind || 'pri', onClick: (bg, close) => { close(); onOk(); } }],
+  });
+}
+
+/* ─── data helpers ──────────────────────────────────────── */
+const D = () => Vault.data;
+const students = () => D().students;
+const getStudent = id => students().find(s => s.id === id);
+const fullName = s => `${s.first || ''} ${s.last || ''}`.trim() || '(unnamed)';
+const sortName = s => `${(s.last || '').toLowerCase()} ${(s.first || '').toLowerCase()}`;
+
+function newStudent(f) {
+  return Object.assign({
+    id: uid(), last: '', first: '', sid: '', classYear: '', program: '', track: '',
+    careerAmbition: '', preferredEmail: '', creditsEarned: '', creditsRemaining: '',
+    auditStatus: '', planLastThree: '', oneNoteLink: '', worksheetsDir: '', generalNotes: '',
+    registrationHold: false, academicConcern: false, scholarshipCheck: false, otherFlag: '',
+    archived: false, curriculum: { done: {}, gbd: {}, electives: [] }, plan: [], entries: [],
+    createdAt: new Date().toISOString(),
+  }, f || {});
+}
+function entries(s, type) {
+  const list = (s.entries || []).slice();
+  return (type && type !== 'all' ? list.filter(e => e.type === type) : list)
+    .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+function openItems(s) {
+  return (s.entries || []).filter(e => e.priority && e.priority !== 'none' && e.status !== 'done');
+}
+function lastMeeting(s) {
+  const m = entries(s, 'meeting')[0];
+  return m ? m.date : null;
+}
+function studentFlags(s) {
+  const f = [];
+  if (s.registrationHold) f.push({ k: 'urgent', t: 'Registration hold' });
+  if (s.academicConcern) f.push({ k: 'watch', t: 'Academic concern' });
+  if (s.scholarshipCheck) f.push({ k: 'watch', t: 'Scholarship check' });
+  if (s.otherFlag) f.push({ k: 'watch', t: s.otherFlag });
+  return f;
+}
+function priorityRank(e) { return e.priority === 'urgent' ? 0 : e.priority === 'watch' ? 1 : 2; }
+
+async function save(msg) {
+  await Vault.persist();
+  paintStatus();
+  if (msg) toast(msg, 'good');
+}
+
+/* ─── curriculum templates ──────────────────────────────── */
+function allTemplates() { return Object.assign({}, TPL, D().templates || {}); }
+function templateOf(s) { return s.program ? allTemplates()[s.program] : null; }
+function curriculumProgress(s) {
+  const t = templateOf(s); if (!t) return null;
+  const done = s.curriculum.done || {}, gbd = s.curriculum.gbd || {};
+  const reqTotal = t.requirements.length, reqDone = t.requirements.filter(r => done[r.id]).length;
+  const gbdList = (t.gbd || []).filter(g => !g.predone);
+  const gbdDone = gbdList.filter(g => (gbd[g.id] || {}).done).length;
+  const crDone = t.requirements.filter(r => done[r.id]).reduce((n, r) => n + (r.credits || 0), 0);
+  const crTotal = t.requirements.reduce((n, r) => n + (r.credits || 0), 0);
+  const elecDone = (s.curriculum.electives || []).reduce((n, e) => n + (parseFloat(e.cr) || 0), 0);
+  const total = reqTotal + gbdList.length, doneN = reqDone + gbdDone;
+  return { reqTotal, reqDone, gbdTotal: gbdList.length, gbdDone, crDone, crTotal, elecDone, elecTotal: t.electiveCreditsRequired || 0, total, doneN, pct: total ? doneN / total * 100 : 0 };
+}
+
+/* ═══ RAIL ═══════════════════════════════════════════════ */
+function paintRail() {
+  const all = students().filter(s => !s.archived);
+  const flagged = [];
+  all.forEach(s => openItems(s).forEach(e => flagged.push({ s, e })));
+  flagged.sort((a, b) => priorityRank(a.e) - priorityRank(b.e) || (a.e.dueDate || '9999').localeCompare(b.e.dueDate || '9999'));
+  const urgentN = flagged.filter(f => f.e.priority === 'urgent').length;
+  const holds = all.filter(s => s.registrationHold).length;
+
+  $('#nav').innerHTML = [
+    ['dash', 'Dashboard', flagged.length, urgentN > 0],
+    ['students', 'Advisees', all.length, false],
+    ['data', 'Backup &amp; data', null, false],
+  ].map(([v, label, n, hot]) =>
+    `<button data-nav="${v}" class="${S.view === v ? 'on' : ''}">${label}${n != null ? `<span class="n-count${hot ? ' hot' : ''}">${n}</span>` : ''}</button>`
+  ).join('');
+
+  $('#rail-list').innerHTML = flagged.length
+    ? flagged.slice(0, 40).map(({ s, e }) => `
+      <button class="rail-item" data-open="${s.id}" data-entry="${e.id}">
+        <span class="tick" style="background:var(--${e.priority === 'urgent' ? 'urgent' : 'watch'})"></span>
+        <span class="who">${esc(s.last || fullName(s))}<span style="color:#6d7488"> · ${esc((e.title || e.type).slice(0, 22))}</span></span>
+        ${e.dueDate ? `<span class="when">${e.dueDate.slice(5).replace('-', '/')}</span>` : ''}
+      </button>`).join('')
+    : `<p style="font-size:12px;color:#5d6474;padding:6px 10px;line-height:1.5">Nothing flagged. Mark an item urgent or watch and it shows up here.</p>`;
+  $('#rail-sec-label').textContent = holds ? `Priority · ${holds} hold${holds > 1 ? 's' : ''}` : 'Priority';
+}
+
+function paintStatus() {
+  const el = $('#saved');
+  const n = Vault.dirty;
+  const linked = Vault.fileLinked;
+  let cls = 'saved', txt;
+  if (linked) { txt = n === 0 ? 'Saved to file' : 'Saving to file…'; }
+  else if (n === 0) txt = 'Backed up';
+  else { txt = `${n} change${n > 1 ? 's' : ''} since backup`; cls += n > 25 ? ' stale' : ' dirty'; }
+  el.className = cls;
+  el.innerHTML = `<span class="dot ${linked ? '' : (n > 25 ? 'warn' : n ? 'warn' : '')}"></span>${esc(txt)}`;
+  $('#rail-status').innerHTML = `<span class="dot ${linked ? '' : 'off'}"></span>${linked ? 'File linked' : 'This browser only'}`;
+  paintRail();
+}
+
+/* ═══ ROUTER ═════════════════════════════════════════════ */
+function render() {
+  paintRail();
+  const p = $('#page');
+  if (S.q) return renderSearch(p);
+  if (S.view === 'dash') return renderDash(p);
+  if (S.view === 'students') return renderStudents(p);
+  if (S.view === 'student') return renderStudent(p);
+  if (S.view === 'data') return renderData(p);
+}
+function go(view, id) { S.view = view; S.studentId = id || null; S.q = ''; $('#search').value = ''; window.scrollTo(0, 0); render(); }
+
+/* ═══ DASHBOARD ══════════════════════════════════════════ */
+function renderDash(p) {
+  const all = students().filter(s => !s.archived);
+  const flagged = [];
+  all.forEach(s => openItems(s).forEach(e => flagged.push({ s, e })));
+  flagged.sort((a, b) => priorityRank(a.e) - priorityRank(b.e) || (a.e.dueDate || '9999').localeCompare(b.e.dueDate || '9999'));
+  const urgent = flagged.filter(f => f.e.priority === 'urgent');
+  const due = flagged.filter(f => f.e.dueDate && f.e.dueDate <= today());
+  const stale = all.map(s => ({ s, last: lastMeeting(s) }))
+    .filter(x => !x.last || daysBetween(x.last, today()) > 60)
+    .sort((a, b) => (a.last || '').localeCompare(b.last || ''));
+  const holds = all.filter(s => s.registrationHold);
+
+  if (!all.length) {
+    p.innerHTML = `<div class="empty" style="padding-top:70px">
+      <h3>No advisees yet</h3>
+      <p>Import your tracker spreadsheet to bring in your roster, or add the first student by hand.</p>
+      <div class="row" style="justify-content:center">
+        <button class="btn pri" data-act="import-xlsx">Import from Excel</button>
+        <button class="btn" data-act="new-student">Add a student</button>
+        <button class="btn" data-act="restore">Restore a backup</button>
+      </div></div>`;
+    return;
+  }
+
+  p.innerHTML = `
+    <div class="page-head">
+      <div><div class="eyebrow">${esc(fmtDate(today(), 'long'))}</div><h1>Dashboard</h1></div>
+      <div class="spacer"></div>
+      <button class="btn" data-act="new-student">Add student</button>
+      <button class="btn pri" data-act="quick-log">Log a meeting</button>
+    </div>
+
+    <div class="grid metrics">
+      <div class="metric"><div class="k">Advisees</div><div class="v">${all.length}</div><div class="s">${students().filter(s => s.archived).length} archived</div></div>
+      <div class="metric${urgent.length ? ' hot' : ''}"><div class="k">Urgent open</div><div class="v">${urgent.length}</div><div class="s">${flagged.length - urgent.length} on watch</div></div>
+      <div class="metric${due.length ? ' warm' : ''}"><div class="k">Past due</div><div class="v">${due.length}</div><div class="s">follow-ups overdue</div></div>
+      <div class="metric${holds.length ? ' hot' : ''}"><div class="k">Registration holds</div><div class="v">${holds.length}</div><div class="s">${all.filter(s => s.academicConcern).length} academic concerns</div></div>
+      <div class="metric"><div class="k">Not seen 60d+</div><div class="v">${stale.length}</div><div class="s">of ${all.length} advisees</div></div>
+    </div>
+
+    <div class="sec-label">Flagged items</div>
+    ${flagged.length ? `<div class="t-wrap"><table><thead><tr>
+        <th style="width:26px"></th><th>Student</th><th>Item</th><th style="width:110px">Due</th><th style="width:90px">Logged</th><th style="width:70px"></th>
+      </tr></thead><tbody>
+      ${flagged.slice(0, 25).map(({ s, e }) => `<tr class="click" data-open="${s.id}" data-entry="${e.id}">
+        <td><span class="tick" style="display:block;width:4px;height:16px;border-radius:2px;background:var(--${e.priority === 'urgent' ? 'urgent' : 'watch'})"></span></td>
+        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
+        <td>${esc(e.title || stripHtml(e.body).slice(0, 70) || '(untitled)')}<div class="sub">${esc(typeLabel(e.type))}</div></td>
+        <td class="mono ${e.dueDate && e.dueDate <= today() ? '' : ''}" style="${e.dueDate && e.dueDate <= today() ? 'color:var(--urgent);font-weight:500' : ''}">${e.dueDate ? esc(fmtDate(e.dueDate)) : '—'}</td>
+        <td class="mono sub">${esc(fmtDate(e.date))}</td>
+        <td><button class="btn sm" data-resolve="${s.id}:${e.id}">Resolve</button></td>
+      </tr>`).join('')}
+      </tbody></table></div>` : `<div class="card sub">Nothing flagged right now.</div>`}
+
+    <div class="sec-label">Haven't met in a while</div>
+    ${stale.length ? `<div class="t-wrap"><table><thead><tr>
+      <th>Student</th><th style="width:120px">Class year</th><th style="width:130px">Last meeting</th><th style="width:110px">Meetings</th><th>Flags</th>
+    </tr></thead><tbody>
+    ${stale.slice(0, 15).map(({ s, last }) => `<tr class="click" data-open="${s.id}">
+      <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
+      <td class="sub">${esc(s.classYear || '—')}</td>
+      <td class="mono">${last ? esc(fmtDate(last)) : '<span style="color:var(--urgent)">never</span>'}</td>
+      <td class="mono sub">${entries(s, 'meeting').length}</td>
+      <td><div class="chips">${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}</div></td>
+    </tr>`).join('')}
+    </tbody></table></div>` : `<div class="card sub">Everyone's been seen within 60 days.</div>`}`;
+}
+
+function typeLabel(t) {
+  return { meeting: 'Meeting', email: 'Email', note: 'Note', flag: 'Flag' }[t] || t;
+}
+
+/* ═══ STUDENT LIST ═══════════════════════════════════════ */
+function renderStudents(p) {
+  const list = students().filter(s => S.showArchived ? s.archived : !s.archived);
+  const years = [...new Set(students().map(s => s.classYear).filter(Boolean))].sort();
+  const progs = allTemplates();
+  let rows = list.slice();
+  if (S.fYear) rows = rows.filter(s => s.classYear === S.fYear);
+  if (S.fProg) rows = rows.filter(s => s.program === S.fProg);
+  if (S.fFlag === 'flagged') rows = rows.filter(s => openItems(s).length || studentFlags(s).length);
+  rows.sort((a, b) => S.sort === 'name' ? sortName(a).localeCompare(sortName(b))
+    : S.sort === 'recent' ? (lastMeeting(b) || '').localeCompare(lastMeeting(a) || '')
+      : (lastMeeting(a) || '0000').localeCompare(lastMeeting(b) || '0000'));
+
+  p.innerHTML = `
+    <div class="page-head">
+      <div><div class="eyebrow">${rows.length} of ${list.length} shown</div><h1>Advisees</h1></div>
+      <div class="spacer"></div>
+      <button class="btn" data-act="import-xlsx">Import from Excel</button>
+      <button class="btn pri" data-act="new-student">Add student</button>
+    </div>
+    <div class="filters">
+      <select data-f="fYear"><option value="">All class years</option>${years.map(y => `<option ${S.fYear === y ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select>
+      <select data-f="fProg"><option value="">All programs</option>${Object.entries(progs).map(([k, t]) => `<option value="${esc(k)}" ${S.fProg === k ? 'selected' : ''}>${esc(t.title)}</option>`).join('')}</select>
+      <select data-f="fFlag"><option value="">Everyone</option><option value="flagged" ${S.fFlag === 'flagged' ? 'selected' : ''}>Flagged only</option></select>
+      <div class="seg">
+        <button data-sort="name" class="${S.sort === 'name' ? 'on' : ''}">A–Z</button>
+        <button data-sort="oldest" class="${S.sort === 'oldest' ? 'on' : ''}">Longest unseen</button>
+        <button data-sort="recent" class="${S.sort === 'recent' ? 'on' : ''}">Most recent</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn sm" data-act="toggle-archived">${S.showArchived ? 'Show active' : 'Show archived'}</button>
+    </div>
+    ${rows.length ? `<div class="t-wrap"><table><thead><tr>
+      <th>Student</th><th style="width:88px">ID</th><th style="width:112px">Class year</th><th style="width:150px">Program</th>
+      <th style="width:118px">Progress</th><th style="width:110px">Last meeting</th><th>Flags</th>
+    </tr></thead><tbody>
+    ${rows.map(s => {
+    const pr = curriculumProgress(s);
+    const last = lastMeeting(s);
+    const open = openItems(s);
+    return `<tr class="click" data-open="${s.id}">
+        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}${s.careerAmbition ? `<div class="sub">${esc(s.careerAmbition)}</div>` : ''}</td>
+        <td class="mono sub">${esc(s.sid || '')}</td>
+        <td class="sub">${esc(s.classYear || '—')}</td>
+        <td class="sub">${esc(progs[s.program] ? progs[s.program].title : (s.program || '—'))}</td>
+        <td>${pr ? `<div class="prog${pr.pct >= 100 ? ' done' : ''}" style="margin:0"><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
+        <td class="mono ${!last || daysBetween(last, today()) > 60 ? '' : ''}" style="${!last || daysBetween(last, today()) > 60 ? 'color:var(--watch)' : ''}">${last ? esc(fmtDate(last)) : 'never'}</td>
+        <td><div class="chips">
+          ${open.filter(e => e.priority === 'urgent').length ? `<span class="chip urgent">${open.filter(e => e.priority === 'urgent').length} urgent</span>` : ''}
+          ${open.filter(e => e.priority === 'watch').length ? `<span class="chip watch">${open.filter(e => e.priority === 'watch').length} watch</span>` : ''}
+          ${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}
+        </div></td>
+      </tr>`;
+  }).join('')}
+    </tbody></table></div>` : `<div class="empty"><h3>Nobody here</h3><p>No advisees match these filters.</p></div>`}`;
+}
+
+/* ═══ SEARCH ═════════════════════════════════════════════ */
+function searchAll(q) {
+  const needle = q.toLowerCase().trim();
+  if (!needle) return [];
+  const terms = needle.split(/\s+/);
+  const hits = [];
+  students().forEach(s => {
+    const idText = [s.last, s.first, s.sid, s.classYear, s.careerAmbition, s.preferredEmail, s.track, s.generalNotes, s.otherFlag].filter(Boolean).join(' ');
+    if (terms.every(t => idText.toLowerCase().includes(t)))
+      hits.push({ s, kind: 'student', score: 0, snippet: [s.classYear, s.careerAmbition, s.preferredEmail].filter(Boolean).join(' · ') });
+    (s.entries || []).forEach(e => {
+      const body = stripHtml(e.body);
+      const hay = [e.title, e.subject, e.from, e.to, e.topics, e.actionItems, e.meetingType, body].filter(Boolean).join(' ');
+      const low = hay.toLowerCase();
+      if (terms.every(t => low.includes(t))) {
+        const i = low.indexOf(terms[0]);
+        const start = Math.max(0, i - 60);
+        hits.push({ s, e, kind: e.type, score: 1, snippet: (start ? '…' : '') + hay.slice(start, start + 220) + (hay.length > start + 220 ? '…' : '') });
+      }
+    });
+    (s.plan || []).forEach(sem => (sem.courses || []).forEach(c => {
+      const hay = [sem.label, c.code, c.title].filter(Boolean).join(' ');
+      if (terms.every(t => hay.toLowerCase().includes(t))) hits.push({ s, kind: 'plan', score: 2, snippet: `${sem.label}: ${c.code} ${c.title}` });
+    }));
+  });
+  return hits.sort((a, b) => a.score - b.score || sortName(a.s).localeCompare(sortName(b.s))).slice(0, 80);
+}
+function mark(text, q) {
+  const terms = q.trim().split(/\s+/).filter(Boolean).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  let out = esc(text);
+  terms.forEach(t => { out = out.replace(new RegExp('(' + t + ')', 'ig'), '<mark>$1</mark>'); });
+  return out;
+}
+function renderSearch(p) {
+  const hits = searchAll(S.q);
+  p.innerHTML = `<div class="page-head"><div><div class="eyebrow">${hits.length} result${hits.length === 1 ? '' : 's'}</div><h1>“${esc(S.q)}”</h1></div></div>
+  ${hits.length ? hits.map(h => `<button class="res" data-open="${h.s.id}"${h.e ? ` data-entry="${h.e.id}"` : ''}>
+    <div class="res-top"><span class="res-who">${esc(h.s.last)}, ${esc(h.s.first)}</span>
+    <span class="chip ${h.kind === 'flag' ? 'urgent' : h.kind === 'student' ? 'accent' : ''}">${esc(h.kind === 'student' ? 'Profile' : h.kind === 'plan' ? 'Plan' : typeLabel(h.kind))}</span>
+    ${h.e && h.e.date ? `<span class="mono sub">${esc(fmtDate(h.e.date))}</span>` : ''}
+    ${h.e && h.e.title ? `<span class="sub" style="font-size:12.5px">${esc(h.e.title)}</span>` : ''}</div>
+    <div class="res-snip">${mark(h.snippet || '', S.q)}</div></button>`).join('')
+      : `<div class="empty"><h3>No matches</h3><p>Nothing in your records mentions that.</p></div>`}`;
+}
+
+/* ═══ STUDENT RECORD ═════════════════════════════════════ */
+function renderStudent(p) {
+  const s = getStudent(S.studentId);
+  if (!s) return go('students');
+  const pr = curriculumProgress(s);
+  const open = openItems(s);
+  const last = lastMeeting(s);
+  const counts = { meeting: 0, email: 0, note: 0, flag: 0 };
+  (s.entries || []).forEach(e => counts[e.type] = (counts[e.type] || 0) + 1);
+
+  p.innerHTML = `
+    <button class="btn sm no-print" data-nav="students" style="margin-bottom:14px">← All advisees</button>
+    <div class="rec-head">
+      <div style="min-width:240px;flex:1">
+        <div class="rec-name">${esc(fullName(s))}</div>
+        <div class="rec-meta">
+          ${s.sid ? `<span>ID ${esc(s.sid)}</span>` : ''}
+          ${s.classYear ? `<span>${esc(s.classYear)}</span>` : ''}
+          ${s.program && allTemplates()[s.program] ? `<span>${esc(allTemplates()[s.program].title)}</span>` : ''}
+          <span>${entries(s, 'meeting').length} meeting${entries(s, 'meeting').length === 1 ? '' : 's'}</span>
+          <span>${last ? 'last seen ' + fmtDate(last) : 'never met'}</span>
+        </div>
+        <div class="chips" style="margin-top:9px">
+          ${open.filter(e => e.priority === 'urgent').length ? `<span class="chip urgent">${open.filter(e => e.priority === 'urgent').length} urgent</span>` : ''}
+          ${open.filter(e => e.priority === 'watch').length ? `<span class="chip watch">${open.filter(e => e.priority === 'watch').length} watch</span>` : ''}
+          ${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}
+          ${s.careerAmbition ? `<span class="chip">${esc(s.careerAmbition)}</span>` : ''}
+          ${s.archived ? `<span class="chip solid">Archived</span>` : ''}
+        </div>
+      </div>
+      ${pr ? `<div style="width:210px">
+        <div class="eyebrow">Curriculum</div>
+        <div class="prog${pr.pct >= 100 ? ' done' : ''}"><i style="width:${pr.pct.toFixed(0)}%"></i></div>
+        <div class="mono sub" style="font-size:11px">${pr.doneN} of ${pr.total} requirements · ${pr.crDone}/${pr.crTotal} core cr</div>
+      </div>` : ''}
+      <div class="row no-print" style="align-items:flex-start">
+        <button class="btn" data-act="print">Print</button>
+        <button class="btn pri" data-act="add-entry">Add to record</button>
+      </div>
+    </div>
+
+    <div class="tabs no-print">
+      <button data-tab="record" class="${S.tab === 'record' ? 'on' : ''}">Record<span class="tcount">${(s.entries || []).length}</span></button>
+      <button data-tab="profile" class="${S.tab === 'profile' ? 'on' : ''}">Profile</button>
+      <button data-tab="curriculum" class="${S.tab === 'curriculum' ? 'on' : ''}">Curriculum</button>
+      <button data-tab="plan" class="${S.tab === 'plan' ? 'on' : ''}">Semester plan<span class="tcount">${(s.plan || []).length}</span></button>
+    </div>
+    <div id="tabbody"></div>`;
+
+  const body = $('#tabbody');
+  if (S.tab === 'record') renderRecordTab(body, s, counts);
+  else if (S.tab === 'profile') renderProfileTab(body, s);
+  else if (S.tab === 'curriculum') renderCurriculumTab(body, s);
+  else renderPlanTab(body, s);
+}
+
+/* ─── Record spine ──────────────────────────────────────── */
+function renderRecordTab(body, s, counts) {
+  const list = entries(s, S.filter);
+  body.innerHTML = `
+    <div class="filters no-print">
+      <div class="seg">
+        ${[['all', 'Everything', (s.entries || []).length], ['meeting', 'Meetings', counts.meeting], ['email', 'Emails', counts.email], ['note', 'Notes', counts.note], ['flag', 'Flags', counts.flag]]
+      .map(([k, l, n]) => `<button data-filter="${k}" class="${S.filter === k ? 'on' : ''}">${l} ${n ? `<span class="mono" style="font-size:10.5px;opacity:.7">${n}</span>` : ''}</button>`).join('')}
+      </div>
+      <div class="spacer"></div>
+      <button class="btn sm" data-act="drop-email">Add email file</button>
+      <button class="btn sm" data-act="quick-note">Quick note</button>
+    </div>
+    <div id="emaildrop" class="drop no-print" style="display:none;margin-bottom:16px">
+      <b>Drop .msg or .eml files here</b>
+      Drag straight out of Outlook. Sender, date, subject and body are read in this browser — nothing is uploaded.
+    </div>
+    ${list.length ? `<div class="spine">${list.map(e => eventHtml(s, e)).join('')}</div>`
+      : `<div class="empty"><h3>Nothing on the record yet</h3><p>Log a meeting, drop in an email, or leave a note. Everything lands on one timeline.</p>
+        <button class="btn pri" data-act="add-entry">Add to record</button></div>`}`;
+  wireDrop($('#emaildrop'), s);
+}
+
+function eventHtml(s, e) {
+  const pcls = e.status === 'done' && e.priority && e.priority !== 'none' ? 'p-done'
+    : e.priority === 'urgent' ? 'p-urgent' : e.priority === 'watch' ? 'p-watch' : '';
+  const dt = e.date ? new Date(e.date + (e.date.length === 10 ? 'T12:00:00' : '')) : null;
+  const fields = [];
+  if (e.type === 'meeting') {
+    if (e.meetingType) fields.push(['Type', e.meetingType]);
+    if (e.followUpBy) fields.push(['Follow up by', fmtDate(e.followUpBy)]);
+    if (e.actionItems) fields.push(['Action items', e.actionItems]);
+  }
+  if (e.type === 'email') {
+    if (e.from) fields.push(['From', e.from]);
+    if (e.to) fields.push(['To', e.to]);
+  }
+  if (e.dueDate) fields.push(['Due', fmtDate(e.dueDate)]);
+  const bodyHtml = e.body || '';
+  const long = stripHtml(bodyHtml).length > 700;
+  return `<div class="ev ${pcls}" id="ev-${e.id}">
+    <div class="ev-date">${dt ? esc(dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })) : '—'}<span class="yr">${dt ? dt.getFullYear() : ''}</span></div>
+    <div class="ev-card">
+      <div class="ev-top">
+        <span class="chip ${e.type === 'flag' ? 'urgent' : e.type === 'email' ? 'accent' : ''}">${esc(typeLabel(e.type))}</span>
+        <span class="ev-title">${esc(e.title || e.subject || '(untitled)')}</span>
+        ${e.priority && e.priority !== 'none' ? `<span class="chip ${e.priority === 'urgent' ? 'urgent' : 'watch'}">${e.status === 'done' ? 'resolved' : e.priority}</span>` : ''}
+        ${e.status === 'done' ? '<span class="chip ok">done</span>' : ''}
+      </div>
+      ${bodyHtml ? `<div class="ev-body${long ? ' ev-fold' : ''}" data-body="${e.id}">${bodyHtml}</div>${long ? `<button class="ev-more" data-expand="${e.id}">Show the rest</button>` : ''}` : ''}
+      ${(e.attachments || []).length ? `<div style="margin-top:7px">${e.attachments.map(a => `<span class="att">📎 ${esc(a.name)}</span>`).join('')}</div>` : ''}
+      ${fields.length ? `<div class="ev-fields">${fields.map(([k, v]) => `<span><b>${esc(k)}:</b> ${esc(v)}</span>`).join('')}</div>` : ''}
+      <div class="ev-act no-print">
+        <button data-edit="${e.id}">Edit</button>
+        ${e.priority && e.priority !== 'none' ? `<button data-toggle-done="${e.id}">${e.status === 'done' ? 'Reopen' : 'Mark resolved'}</button>` : ''}
+        <button data-del="${e.id}">Delete</button>
+      </div>
+    </div></div>`;
+}
+
+/* ─── Entry editor ──────────────────────────────────────── */
+function editorHtml(id, ph, html) {
+  return `<div class="editor"><div class="ed-bar">
+    <button data-cmd="bold" title="Bold"><b>B</b></button>
+    <button data-cmd="italic" title="Italic"><i>I</i></button>
+    <button data-cmd="underline" title="Underline"><u>U</u></button>
+    <span class="sep"></span>
+    <button data-cmd="insertUnorderedList" title="Bullets">• List</button>
+    <button data-cmd="insertOrderedList" title="Numbered">1. List</button>
+    <button data-cmd="formatBlock" data-val="h3" title="Heading">H</button>
+    <span class="sep"></span>
+    <button data-cmd="hiliteColor" data-val="#fff2a8" title="Highlight">Highlight</button>
+    <button data-cmd="removeFormat" title="Clear formatting">Clear</button>
+    <span class="sep"></span>
+    <button data-cmd="createLink" title="Link">Link</button>
+    <button data-table title="Insert table">Table</button>
+  </div><div class="ed-area" id="${id}" contenteditable="true" data-ph="${esc(ph)}">${html || ''}</div></div>`;
+}
+function wireEditor(root) {
+  const area = $('.ed-area', root); if (!area) return;
+  $$('.ed-bar button', root).forEach(b => b.onmousedown = e => {
+    e.preventDefault();
+    area.focus();
+    if (b.hasAttribute('data-table')) {
+      const rows = +prompt('How many rows?', '4') || 0, cols = +prompt('How many columns?', '3') || 0;
+      if (!rows || !cols) return;
+      let t = '<table>';
+      for (let r = 0; r < rows; r++) { t += '<tr>'; for (let c = 0; c < cols; c++) t += r === 0 ? '<th>&nbsp;</th>' : '<td>&nbsp;</td>'; t += '</tr>'; }
+      document.execCommand('insertHTML', false, t + '</table><p></p>');
+      return;
+    }
+    const cmd = b.dataset.cmd;
+    if (cmd === 'createLink') { const u = prompt('Link address'); if (u) document.execCommand('createLink', false, u); return; }
+    document.execCommand(cmd, false, b.dataset.val || null);
+  });
+  area.addEventListener('paste', ev => {
+    const dt = ev.clipboardData; if (!dt) return;
+    const img = Array.from(dt.items || []).find(i => i.type.startsWith('image/'));
+    if (img) {
+      ev.preventDefault();
+      const f = img.getAsFile(); const r = new FileReader();
+      r.onload = () => document.execCommand('insertHTML', false, `<img src="${r.result}">`);
+      r.readAsDataURL(f); return;
+    }
+    const html = dt.getData('text/html');
+    if (html) { ev.preventDefault(); document.execCommand('insertHTML', false, cleanHtml(html)); }
+  });
+}
+
+function entryModal(s, existing, preset) {
+  const e = existing || Object.assign({ id: uid(), type: 'meeting', date: today(), title: '', body: '', priority: 'none', status: 'open', createdAt: new Date().toISOString() }, preset || {});
+  const isNew = !existing;
+  const m = modal({
+    title: (isNew ? 'Add to record — ' : 'Edit — ') + fullName(s), wide: true, sticky: true,
+    body: `<div class="fields">
+      <div class="field"><label>Kind</label><select id="e-type">
+        ${['meeting', 'email', 'note', 'flag'].map(t => `<option value="${t}" ${e.type === t ? 'selected' : ''}>${typeLabel(t)}</option>`).join('')}
+      </select></div>
+      <div class="field"><label>Date</label><input type="date" id="e-date" value="${esc((e.date || '').slice(0, 10))}"></div>
+      <div class="field"><label>Priority</label><select id="e-pri">
+        <option value="none" ${e.priority === 'none' ? 'selected' : ''}>Normal</option>
+        <option value="watch" ${e.priority === 'watch' ? 'selected' : ''}>Watch</option>
+        <option value="urgent" ${e.priority === 'urgent' ? 'selected' : ''}>Urgent</option>
+      </select></div>
+      <div class="field"><label>Follow up by</label><input type="date" id="e-due" value="${esc(e.dueDate || '')}"></div>
+      <div class="field wide"><label>Title</label><input id="e-title" value="${esc(e.title || e.subject || '')}" placeholder="Fall registration — course selection"></div>
+      <div class="field wide" id="meet-fields" style="display:none">
+        <div class="fields" style="grid-template-columns:1fr 1fr">
+          <div class="field"><label>Meeting type</label><input id="e-mtype" value="${esc(e.meetingType || '')}" placeholder="Registration advising, drop-in, email exchange…"></div>
+          <div class="field"><label>Action items</label><input id="e-action" value="${esc(e.actionItems || '')}" placeholder="Student to email registrar"></div>
+        </div>
+      </div>
+      <div class="field wide" id="mail-fields" style="display:none">
+        <div class="fields" style="grid-template-columns:1fr 1fr">
+          <div class="field"><label>From</label><input id="e-from" value="${esc(e.from || '')}"></div>
+          <div class="field"><label>To</label><input id="e-to" value="${esc(e.to || '')}"></div>
+        </div>
+      </div>
+      <div class="field wide"><label>Notes</label>${editorHtml('e-body', 'Type, or paste straight from OneNote — tables, formatting and images come across.', e.body || '')}</div>
+    </div>`,
+    buttons: [
+      { label: 'Cancel' },
+      {
+        label: isNew ? 'Add to record' : 'Save', kind: 'pri', onClick: async (bg, close) => {
+          const t = $('#e-type', bg).value;
+          Object.assign(e, {
+            type: t, date: $('#e-date', bg).value || today(),
+            priority: $('#e-pri', bg).value, dueDate: $('#e-due', bg).value || '',
+            title: $('#e-title', bg).value.trim(),
+            body: cleanHtml($('#e-body', bg).innerHTML),
+            meetingType: $('#e-mtype', bg).value.trim(), actionItems: $('#e-action', bg).value.trim(),
+            from: $('#e-from', bg).value.trim(), to: $('#e-to', bg).value.trim(),
+            updatedAt: new Date().toISOString(),
+          });
+          if (e.priority === 'none') e.status = 'open';
+          if (isNew) (s.entries = s.entries || []).push(e);
+          close(); await save(); render();
+          const el = document.getElementById('ev-' + e.id);
+          if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      },
+    ],
+    onOpen: bg => {
+      wireEditor(bg);
+      const sync = () => {
+        const t = $('#e-type', bg).value;
+        $('#meet-fields', bg).style.display = t === 'meeting' ? '' : 'none';
+        $('#mail-fields', bg).style.display = t === 'email' ? '' : 'none';
+      };
+      $('#e-type', bg).onchange = sync; sync();
+    },
+  });
+  return m;
+}
+
+/* ─── Email drop ────────────────────────────────────────── */
+function wireDrop(zone, s) {
+  if (!zone) return;
+  const stop = e => { e.preventDefault(); e.stopPropagation(); };
+  ['dragenter', 'dragover'].forEach(k => zone.addEventListener(k, e => { stop(e); zone.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(k => zone.addEventListener(k, e => { stop(e); zone.classList.remove('over'); }));
+  zone.addEventListener('drop', async e => {
+    const files = Array.from(e.dataTransfer.files || []);
+    if (!files.length) return toast('Outlook did not hand over a file. Try dragging the message to your desktop first, then in here.', 'bad');
+    let n = 0;
+    for (const f of files) {
+      try { await ingestEmail(s, f); n++; }
+      catch (err) { toast(`Could not read ${f.name}: ${err.message}`, 'bad'); }
+    }
+    if (n) { await save(); render(); toast(`${n} email${n > 1 ? 's' : ''} added to the record`, 'good'); }
+  });
+}
+async function ingestEmail(s, file) {
+  const nm = file.name.toLowerCase();
+  let m;
+  if (nm.endsWith('.msg')) m = parseMsg(await file.arrayBuffer());
+  else if (nm.endsWith('.eml') || nm.endsWith('.txt')) m = parseEml(await file.text());
+  else throw new Error('not an email file (.msg or .eml)');
+  const body = m.html ? cleanHtml(m.html) : textToHtml(m.text);
+  (s.entries = s.entries || []).push({
+    id: uid(), type: 'email', date: (m.date || new Date().toISOString()).slice(0, 10),
+    title: m.subject || '(no subject)', from: m.from || '', to: m.to || '',
+    body, attachments: (m.attachments || []).map(a => ({ name: a.name, type: a.type })),
+    priority: 'none', status: 'open', createdAt: new Date().toISOString(), source: file.name,
+  });
+}
+
+/* ═══ PROFILE TAB ════════════════════════════════════════ */
+function renderProfileTab(body, s) {
+  const progs = allTemplates();
+  const F = (k, label, opts) => {
+    const v = s[k] == null ? '' : s[k];
+    if (opts && opts.select) return `<div class="field"><label>${label}</label><select data-sf="${k}">${opts.select.map(o => `<option value="${esc(o)}" ${v === o ? 'selected' : ''}>${esc(o || '—')}</option>`).join('')}</select></div>`;
+    if (opts && opts.area) return `<div class="field wide"><label>${label}</label><textarea data-sf="${k}" rows="${opts.rows || 4}">${esc(v)}</textarea></div>`;
+    return `<div class="field"><label>${label}</label><input data-sf="${k}" value="${esc(v)}" ${opts && opts.type ? `type="${opts.type}"` : ''} placeholder="${esc((opts && opts.ph) || '')}"></div>`;
+  };
+  body.innerHTML = `
+    <div class="sec-label">Identity</div>
+    <div class="card"><div class="fields">
+      ${F('first', 'First name')}${F('last', 'Last name')}${F('sid', 'Student ID')}
+      ${F('classYear', 'Class year', { select: ['', 'Freshman (1)', 'Sophomore (2)', 'Junior (3)', 'Senior (4)', 'Fifth year', 'Graduated'] })}
+      <div class="field"><label>Program</label><select data-sf="program">
+        <option value="">— none —</option>
+        ${Object.entries(progs).map(([k, t]) => `<option value="${esc(k)}" ${s.program === k ? 'selected' : ''}>${esc(t.title)}</option>`).join('')}
+      </select></div>
+      ${F('track', 'Track / concentration')}
+      ${F('careerAmbition', 'Career ambition', { ph: 'PA school, dentistry, research…' })}
+      ${F('preferredEmail', 'Preferred email', { type: 'email' })}
+    </div></div>
+
+    <div class="sec-label">Progress toward the degree</div>
+    <div class="card"><div class="fields">
+      ${F('creditsEarned', 'Credits earned')}${F('creditsRemaining', 'Credits remaining')}
+      ${F('auditStatus', 'Degree audit status', { select: ['', 'On track', 'Needs review', 'Incomplete', 'Complete'] })}
+      ${F('planLastThree', 'Last-three-semesters plan', { select: ['', 'Not needed yet', 'Needed', 'In progress', 'Complete'] })}
+    </div></div>
+
+    <div class="sec-label">Standing flags</div>
+    <div class="card"><div class="fields">
+      ${[['registrationHold', 'Registration hold'], ['academicConcern', 'Academic concern'], ['scholarshipCheck', 'Scholarship check']].map(([k, l]) =>
+    `<div class="field"><label>${l}</label><select data-sf="${k}" data-bool="1"><option value="" ${!s[k] ? 'selected' : ''}>No</option><option value="1" ${s[k] ? 'selected' : ''}>Yes</option></select></div>`).join('')}
+      ${F('otherFlag', 'Other flag', { ph: 'Anything you want surfaced on the dashboard' })}
+    </div></div>
+
+    <div class="sec-label">Links and general notes</div>
+    <div class="card"><div class="fields">
+      ${F('oneNoteLink', 'OneNote link', { ph: 'Paste the old notebook link if you want it kept' })}
+      ${F('worksheetsDir', 'Advising worksheets folder')}
+      ${F('generalNotes', 'General notes', { area: true, rows: 6 })}
+    </div></div>
+
+    <div class="row no-print" style="margin-top:18px">
+      <button class="btn" data-act="archive-student">${s.archived ? 'Restore to active list' : 'Archive this student'}</button>
+      <div class="spacer"></div>
+      <button class="btn danger" data-act="delete-student">Delete this student</button>
+    </div>`;
+}
+
+/* ═══ CURRICULUM TAB ═════════════════════════════════════ */
+function renderCurriculumTab(body, s) {
+  const t = templateOf(s);
+  if (!t) {
+    body.innerHTML = `<div class="empty"><h3>No program assigned</h3>
+      <p>Pick a program on the Profile tab and the full requirement checklist appears here, with credits counted as you tick things off.</p>
+      <button class="btn pri" data-tab="profile">Go to profile</button></div>`;
+    return;
+  }
+  const done = s.curriculum.done || {}, gbdState = s.curriculum.gbd || {};
+  const pr = curriculumProgress(s);
+  const years = [...new Set(t.requirements.map(r => r.year))];
+  const elecs = s.curriculum.electives || [];
+  const elecTotal = elecs.reduce((n, e) => n + (parseFloat(e.cr) || 0), 0);
+
+  body.innerHTML = `
+    <div class="card" style="margin-bottom:18px">
+      <div class="row"><b>${esc(t.title)}</b><div class="spacer"></div>
+        <span class="mono sub">${pr.doneN}/${pr.total} requirements · ${pr.crDone}/${pr.crTotal} core credits · electives ${elecTotal}/${pr.elecTotal}</span></div>
+      <div class="prog${pr.pct >= 100 ? ' done' : ''}"><i style="width:${pr.pct.toFixed(0)}%"></i></div>
+    </div>
+    ${years.map(y => `<div class="yr-band">
+      <div class="sec-label">${esc(y)}</div>
+      ${[...new Set(t.requirements.filter(r => r.year === y).map(r => r.term))].map(term => `
+        <div style="margin-bottom:11px">
+          <div class="mono sub" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${esc(term)}</div>
+          <div class="term-grid">
+          ${t.requirements.filter(r => r.year === y && r.term === term).map(r => `
+            <button class="creq ${done[r.id] ? 'done' : ''}" data-req="${esc(r.id)}" title="${esc(r.desc || '')}">
+              <span class="box">${done[r.id] ? '✓' : ''}</span>
+              <span><span class="cc">${esc(r.code)}</span><span class="cn">${esc(r.name)}</span>
+              <span class="ct">${r.credits ? r.credits + ' cr' : ''}${r.tags && r.tags.length ? ' · ' + esc(r.tags.join(' · ')) : ''}</span></span>
+            </button>`).join('')}
+          </div></div>`).join('')}
+    </div>`).join('')}
+
+    <div class="sec-label">General education (GBD)</div>
+    ${[...new Set((t.gbd || []).map(g => g.group))].map(grp => `
+      <div class="gbd-grp">
+        <div class="gl">${esc(grp)}</div>
+        <div class="term-grid">
+        ${(t.gbd || []).filter(g => g.group === grp).map(g => {
+    const st = gbdState[g.id] || {};
+    const isDone = g.predone || st.done;
+    return `<div class="creq ${isDone ? 'done' : ''}" style="flex-direction:column;align-items:stretch;gap:6px">
+            <button data-gbd="${esc(g.id)}" style="display:flex;gap:9px;align-items:flex-start;text-align:left;width:100%">
+              <span class="box">${isDone ? '✓' : ''}</span>
+              <span><span class="cc">${esc(g.code)}</span><span class="cn">${esc(g.name)}</span><span class="ct">${esc(g.creditsText)}</span></span>
+            </button>
+            ${g.needsCourse ? `<input data-gbdcourse="${esc(g.id)}" value="${esc(st.course || '')}" placeholder="Course taken" style="border:1px solid var(--line-2);border-radius:5px;padding:4px 7px;font-family:var(--mono);font-size:11.5px">` : ''}
+          </div>`;
+  }).join('')}
+        </div></div>`).join('')}
+
+    <div class="sec-label">Electives ${t.electiveCreditsRequired ? `<span class="mono" style="text-transform:none;letter-spacing:0">${elecTotal} of ${t.electiveCreditsRequired} cr</span>` : ''}</div>
+    <div class="card">
+      <table class="plan-t"><thead><tr><th style="width:110px">Course</th><th>Title</th><th style="width:70px">Credits</th><th style="width:60px">WIC</th><th style="width:34px"></th></tr></thead>
+      <tbody>${elecs.map((e, i) => `<tr>
+        <td><input class="code-in" data-el="${i}:code" value="${esc(e.code || '')}"></td>
+        <td><input data-el="${i}:name" value="${esc(e.name || '')}"></td>
+        <td><input class="cr-in" data-el="${i}:cr" value="${esc(e.cr || '')}"></td>
+        <td style="text-align:center"><button data-elwic="${i}" class="chip ${e.wic ? 'accent' : ''}">${e.wic ? 'WIC' : '—'}</button></td>
+        <td><button class="x-btn" data-elx="${i}">×</button></td></tr>`).join('')}
+      </tbody></table>
+      <div class="row" style="margin-top:9px"><button class="btn sm" data-act="add-elective">Add elective row</button>
+      <div class="spacer"></div><span class="mono sub">${elecTotal} credits logged</span></div>
+    </div>`;
+}
+
+/* ═══ SEMESTER PLAN TAB ══════════════════════════════════ */
+function renderPlanTab(body, s) {
+  const plan = s.plan || [];
+  body.innerHTML = `
+    <p class="hint" style="margin-bottom:14px">Lay out the remaining semesters course by course — the same thing you were keeping on the “Last Three Semesters” page. Highlight a row to mark anything that needs watching, like a summer course or a repeat.</p>
+    ${plan.map((sem, si) => {
+    const tot = (sem.courses || []).reduce((n, c) => n + (parseFloat(c.credits) || 0), 0);
+    return `<div class="plan-card">
+        <div class="plan-head">
+          <input data-plan="${si}:label" value="${esc(sem.label || '')}" placeholder="Fall 2026">
+          <button class="btn sm" data-planadd="${si}">Add course</button>
+          <button class="x-btn" data-planx="${si}" title="Remove semester">×</button>
+        </div>
+        <table class="plan-t"><thead><tr>
+          <th style="width:110px">Course code</th><th style="width:74px">Section</th><th>Title</th><th style="width:74px">Credits</th><th style="width:60px">Flag</th><th style="width:34px"></th>
+        </tr></thead><tbody>
+        ${(sem.courses || []).map((c, ci) => `<tr class="${c.highlight ? 'hl' : ''}">
+          <td><input class="code-in" data-pc="${si}:${ci}:code" value="${esc(c.code || '')}"></td>
+          <td><input class="code-in" data-pc="${si}:${ci}:section" value="${esc(c.section || '')}"></td>
+          <td><input data-pc="${si}:${ci}:title" value="${esc(c.title || '')}"></td>
+          <td><input class="cr-in" data-pc="${si}:${ci}:credits" value="${esc(c.credits || '')}"></td>
+          <td style="text-align:center"><button data-pchl="${si}:${ci}" class="chip ${c.highlight ? 'watch' : ''}">${c.highlight ? 'flagged' : '—'}</button></td>
+          <td><button class="x-btn" data-pcx="${si}:${ci}">×</button></td>
+        </tr>`).join('')}
+        </tbody></table>
+        <div class="plan-tot">Total <b>${tot}</b> credits</div>
+      </div>`;
+  }).join('')}
+    <button class="btn" data-act="add-semester">Add a semester</button>`;
+}
+
+/* ═══ DATA / BACKUP VIEW ═════════════════════════════════ */
+function renderData(p) {
+  const n = Vault.dirty;
+  const cnt = students().reduce((a, s) => { a.st++; a.ev += (s.entries || []).length; return a; }, { st: 0, ev: 0 });
+  p.innerHTML = `
+    <div class="page-head"><div><div class="eyebrow">Everything stays on this machine</div><h1>Backup &amp; data</h1></div></div>
+
+    <div class="sec-label">Where your records live</div>
+    <div class="card">
+      <p style="font-size:13.5px;line-height:1.65;margin-bottom:12px">
+        ${cnt.st} student records and ${cnt.ev} timeline entries are stored encrypted in this browser's local database.
+        Nothing is sent anywhere. Browser storage can be wiped by clearing site data or reimaging the machine, so keep a backup file.
+      </p>
+      <div class="row">
+        <button class="btn pri" data-act="backup">Download a backup now</button>
+        <button class="btn" data-act="restore">Restore from a backup</button>
+        <span class="mono sub">${Vault.lastBackup ? 'Last backup ' + fmtDate(Vault.lastBackup, 'time') : 'Never backed up'}${n ? ` · ${n} change${n > 1 ? 's' : ''} since` : ''}</span>
+      </div>
+    </div>
+
+    <div class="sec-label">Keep two machines in step</div>
+    <div class="card">
+      ${Vault.supportsFile() ? `
+        <p style="font-size:13.5px;line-height:1.65;margin-bottom:12px">
+          Link the hub to a single <b>.hub</b> file in your OneDrive folder and every change writes straight to it — office and laptop stay on the same copy, and OneDrive handles the syncing.
+          Do this once on each machine, pointing at the same file. The file stays encrypted with your passcode.
+        </p>
+        <div class="row">
+          ${Vault.fileLinked
+        ? `<span class="chip ok">Linked</span><button class="btn" data-act="file-write">Save to it now</button>
+             <button class="btn" data-act="file-load">Load from it</button><button class="btn" data-act="file-unlink">Unlink</button>`
+        : `<button class="btn pri" data-act="file-new">Create the file in OneDrive</button>
+             <button class="btn" data-act="file-open">Link an existing file</button>`}
+        </div>`
+      : `<p style="font-size:13.5px;line-height:1.65">
+          This browser can't write directly to a file. Chrome or Edge on the desktop can — open the hub there to turn on file sync.
+          Until then, use Download a backup on one machine and Restore on the other, and mind the direction.</p>`}
+    </div>
+
+    <div class="sec-label">Bring data in</div>
+    <div class="card"><div class="row">
+      <button class="btn" data-act="import-xlsx">Import roster from Excel</button>
+      <button class="btn" data-act="import-onenote">Paste a OneNote page</button>
+      <span class="hint">Excel matches on student ID, so re-importing updates rather than duplicates.</span>
+    </div></div>
+
+    <div class="sec-label">Take data out</div>
+    <div class="card"><div class="row">
+      <button class="btn" data-act="export-csv">Roster as CSV</button>
+      <button class="btn" data-act="export-plain">Unencrypted JSON</button>
+      <span class="hint">An unencrypted export is a plain file of student records — treat it the way you'd treat a printed roster.</span>
+    </div></div>
+
+    <div class="sec-label">Security</div>
+    <div class="card"><div class="row">
+      <button class="btn" data-act="passcode">Change passcode</button>
+      <div class="field" style="max-width:190px"><label>Auto-lock after</label>
+        <select data-act="autolock">${[5, 15, 30, 60, 120, 0].map(v => `<option value="${v}" ${(D().settings.autoLockMin || 30) === v ? 'selected' : ''}>${v ? v + ' minutes' : 'never'}</option>`).join('')}</select></div>
+      <button class="btn" data-act="lock">Lock now</button>
+    </div></div>
+
+    <div class="sec-label">Danger</div>
+    <div class="card"><div class="row">
+      <button class="btn danger" data-act="wipe">Erase everything on this machine</button>
+      <span class="hint">Wipes the encrypted database in this browser. Backup files elsewhere are untouched.</span>
+    </div></div>`;
+}
+
+/* ═══ IMPORT: Excel roster ═══════════════════════════════ */
+const FIELD_MAP = [
+  ['last', 'Last name'], ['first', 'First name'], ['sid', 'Student ID'], ['classYear', 'Class year'],
+  ['program', 'Program'], ['track', 'Track / concentration'], ['careerAmbition', 'Career ambition'],
+  ['preferredEmail', 'Preferred email'], ['creditsEarned', 'Credits earned'], ['creditsRemaining', 'Credits remaining'],
+  ['auditStatus', 'Degree audit status'], ['planLastThree', 'Last-three plan'], ['registrationHold', 'Registration hold'],
+  ['academicConcern', 'Academic concern'], ['scholarshipCheck', 'Scholarship check'], ['otherFlag', 'Other flag'],
+  ['oneNoteLink', 'OneNote link'], ['worksheetsDir', 'Worksheets folder'], ['generalNotes', 'General notes'],
+  ['_lastMeeting', 'Last meeting date → logs a meeting'], ['_meetingCount', 'Total meetings (noted)'],
+];
+const GUESS = {
+  last: /^last/i, first: /^first/i, sid: /student\s*id|^id$/i, classYear: /class\s*year|^year$/i,
+  program: /^major|program|track$/i, careerAmbition: /career|ambition/i, preferredEmail: /email/i,
+  creditsEarned: /credits?\s*earned/i, creditsRemaining: /credits?\s*remain/i, auditStatus: /audit/i,
+  planLastThree: /last\s*three/i, registrationHold: /hold/i, academicConcern: /concern/i,
+  scholarshipCheck: /scholarship/i, otherFlag: /other\s*flag/i, oneNoteLink: /onenote/i,
+  worksheetsDir: /worksheet|directory/i, generalNotes: /notes/i,
+  _lastMeeting: /last\s*meeting/i, _meetingCount: /total\s*meetings/i,
+};
+const truthy = v => /^(y|yes|true|1|x|✓)$/i.test(String(v).trim());
+
+async function importXlsxFlow() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.xlsx,.xlsm';
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    let sheets;
+    try { sheets = await readXlsx(f); }
+    catch (e) { return toast(e.message, 'bad'); }
+    sheets = sheets.filter(s => s.rows.some(r => r.filter(Boolean).length > 1));
+    if (!sheets.length) return toast('That workbook has no rows with data in it.', 'bad');
+    pickSheet(sheets);
+  };
+  inp.click();
+}
+
+function pickSheet(sheets) {
+  modal({
+    title: 'Import roster from Excel', wide: true,
+    body: `<div class="field"><label>Which sheet holds your students?</label>
+        <select id="i-sheet">${sheets.map((s, i) => `<option value="${i}">${esc(s.name)} — ${s.rows.length} rows</option>`).join('')}</select></div>
+      <div class="field" style="margin-top:12px"><label>Which row has the column headings?</label><select id="i-head"></select></div>
+      <div id="i-prev" style="margin-top:14px"></div>`,
+    buttons: [{ label: 'Cancel' }, {
+      label: 'Next: match columns', kind: 'pri', onClick: (bg, close) => {
+        const sh = sheets[+$('#i-sheet', bg).value], hr = +$('#i-head', bg).value;
+        close(); mapColumns(sh, hr);
+      }
+    }],
+    onOpen: bg => {
+      const fill = () => {
+        const sh = sheets[+$('#i-sheet', bg).value];
+        const opts = sh.rows.slice(0, 12).map((r, i) => `<option value="${i}">Row ${i + 1}: ${esc(r.filter(Boolean).slice(0, 5).join(' · ').slice(0, 70))}</option>`).join('');
+        $('#i-head', bg).innerHTML = opts;
+        // best guess: first row with 3+ non-empty cells that look like labels
+        const guess = sh.rows.findIndex(r => r.filter(Boolean).length >= 3 && r.some(c => /last/i.test(c)));
+        $('#i-head', bg).value = guess >= 0 ? guess : 0;
+        preview(bg, sh, +$('#i-head', bg).value);
+      };
+      $('#i-sheet', bg).onchange = fill;
+      $('#i-head', bg).onchange = () => preview(bg, sheets[+$('#i-sheet', bg).value], +$('#i-head', bg).value);
+      fill();
+    },
+  });
+  function preview(bg, sh, hr) {
+    const head = sh.rows[hr] || [], rows = sh.rows.slice(hr + 1).filter(r => r.filter(Boolean).length);
+    $('#i-prev', bg).innerHTML = `<div class="hint" style="margin-bottom:6px">${rows.length} data rows below that heading</div>
+      <div class="t-wrap" style="overflow-x:auto"><table><thead><tr>${head.map(h => `<th>${esc(h || '')}</th>`).join('')}</tr></thead>
+      <tbody>${rows.slice(0, 3).map(r => `<tr>${head.map((_, i) => `<td class="sub">${esc((r[i] || '').slice(0, 26))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+}
+
+function mapColumns(sheet, headRow) {
+  const head = sheet.rows[headRow] || [];
+  const rows = sheet.rows.slice(headRow + 1).filter(r => r.filter(Boolean).length);
+  const auto = {};
+  FIELD_MAP.forEach(([k]) => {
+    const i = head.findIndex(h => GUESS[k] && GUESS[k].test(h || ''));
+    if (i >= 0 && !Object.values(auto).includes(i)) auto[k] = i;
+  });
+  modal({
+    title: 'Match your columns', wide: true,
+    body: `<p class="hint" style="margin-bottom:14px">Anything left unmatched is skipped. Rows are matched to existing students by student ID, then by name — an import updates rather than duplicates.</p>
+      <div class="fields">${FIELD_MAP.map(([k, label]) => `<div class="field"><label>${esc(label)}</label>
+        <select data-map="${k}"><option value="">— skip —</option>
+        ${head.map((h, i) => `<option value="${i}" ${auto[k] === i ? 'selected' : ''}>${esc(h || '(column ' + (i + 1) + ')')}</option>`).join('')}
+        </select></div>`).join('')}</div>`,
+    buttons: [{ label: 'Cancel' }, {
+      label: `Import ${rows.length} rows`, kind: 'pri', onClick: async (bg, close) => {
+        const map = {};
+        $$('[data-map]', bg).forEach(sel => { if (sel.value !== '') map[sel.dataset.map] = +sel.value; });
+        const res = applyImport(rows, map);
+        close(); await save();
+        toast(`${res.added} added, ${res.updated} updated${res.meetings ? `, ${res.meetings} meetings logged` : ''}`, 'good');
+        go('students');
+      }
+    }],
+  });
+}
+
+function applyImport(rows, map) {
+  let added = 0, updated = 0, meetings = 0;
+  const val = (r, k) => map[k] != null ? (r[map[k]] || '').trim() : '';
+  rows.forEach(r => {
+    const sid = val(r, 'sid'), last = val(r, 'last'), first = val(r, 'first');
+    if (!sid && !last) return;
+    let s = sid ? students().find(x => x.sid && x.sid === sid) : null;
+    if (!s) s = students().find(x => x.last.toLowerCase() === last.toLowerCase() && x.first.toLowerCase() === first.toLowerCase() && last);
+    if (!s) { s = newStudent(); students().push(s); added++; } else updated++;
+    ['last', 'first', 'sid', 'classYear', 'track', 'careerAmbition', 'preferredEmail', 'creditsEarned',
+      'creditsRemaining', 'auditStatus', 'planLastThree', 'otherFlag', 'oneNoteLink', 'worksheetsDir'].forEach(k => {
+        const v = val(r, k); if (v) s[k] = v;
+      });
+    ['registrationHold', 'academicConcern', 'scholarshipCheck'].forEach(k => { if (map[k] != null) s[k] = truthy(val(r, k)); });
+    const notes = val(r, 'generalNotes'); if (notes) s.generalNotes = (s.generalNotes ? s.generalNotes + '\n' : '') + notes;
+    const prog = val(r, 'program');
+    if (prog && !s.program) {
+      const keys = Object.entries(allTemplates()).find(([k, t]) => t.title.toLowerCase().includes(prog.toLowerCase()) || prog.toLowerCase().includes(k));
+      s.program = keys ? keys[0] : s.program;
+      if (!keys) s.track = s.track || prog;
+    }
+    const lm = val(r, '_lastMeeting');
+    if (lm) {
+      const d = /^\d{4}-\d{2}-\d{2}/.test(lm) ? lm.slice(0, 10) : (isNaN(new Date(lm)) ? null : new Date(lm).toISOString().slice(0, 10));
+      if (d && !(s.entries || []).some(e => e.type === 'meeting' && e.date === d)) {
+        (s.entries = s.entries || []).push({
+          id: uid(), type: 'meeting', date: d, title: 'Advising meeting',
+          body: `<p>Imported from the tracker spreadsheet.${val(r, '_meetingCount') ? ` Spreadsheet recorded ${esc(val(r, '_meetingCount'))} meetings total.` : ''}</p>`,
+          priority: 'none', status: 'open', createdAt: new Date().toISOString(),
+        });
+        meetings++;
+      }
+    }
+  });
+  return { added, updated, meetings };
+}
+
+/* ═══ IMPORT: OneNote paste ══════════════════════════════ */
+function oneNoteFlow(preStudent) {
+  if (!students().length) return toast('Add a student first — a page has to land on someone.', 'bad');
+  const list = students().slice().sort((a, b) => sortName(a).localeCompare(sortName(b)));
+  modal({
+    title: 'Paste a OneNote page', wide: true, sticky: true,
+    body: `<p class="hint" style="margin-bottom:12px">In OneNote: open the page, Ctrl+A, Ctrl+C, then paste below. Tables, highlighting and images come across. Do this once per page — it lands on that student's record as a dated entry.</p>
+      <div class="fields">
+        <div class="field"><label>Student</label><select id="on-student">${list.map(s => `<option value="${s.id}" ${preStudent === s.id ? 'selected' : ''}>${esc(s.last)}, ${esc(s.first)}</option>`).join('')}</select></div>
+        <div class="field"><label>Kind</label><select id="on-type">${['note', 'meeting', 'email', 'flag'].map(t => `<option value="${t}">${typeLabel(t)}</option>`).join('')}</select></div>
+        <div class="field"><label>Date on the page</label><input type="date" id="on-date" value="${today()}"></div>
+        <div class="field"><label>Title</label><input id="on-title" placeholder="Meeting notes"></div>
+        <div class="field wide"><label>Paste here</label>${editorHtml('on-body', 'Paste the OneNote page…', '')}</div>
+      </div>`,
+    buttons: [{ label: 'Cancel' }, {
+      label: 'Add to record', kind: 'pri', onClick: async (bg, close) => {
+        const s = getStudent($('#on-student', bg).value);
+        const html = cleanHtml($('#on-body', bg).innerHTML);
+        if (!stripHtml(html)) return toast('Nothing pasted yet.', 'bad');
+        (s.entries = s.entries || []).push({
+          id: uid(), type: $('#on-type', bg).value, date: $('#on-date', bg).value || today(),
+          title: $('#on-title', bg).value.trim() || 'From OneNote', body: html,
+          priority: 'none', status: 'open', createdAt: new Date().toISOString(), source: 'OneNote',
+        });
+        close(); await save(); toast(`Added to ${fullName(s)}'s record`, 'good');
+        if (S.view === 'student') render();
+      }
+    }],
+    onOpen: bg => wireEditor(bg),
+  });
+}
+
+/* ═══ EXPORTS ════════════════════════════════════════════ */
+function exportCsv() {
+  const cols = ['last', 'first', 'sid', 'classYear', 'program', 'track', 'careerAmbition', 'preferredEmail',
+    'creditsEarned', 'creditsRemaining', 'auditStatus', 'planLastThree', 'registrationHold', 'academicConcern',
+    'scholarshipCheck', 'otherFlag', 'generalNotes'];
+  const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const head = [...cols, 'lastMeeting', 'meetings', 'openFlags'].join(',');
+  const body = students().map(s => [...cols.map(c => q(typeof s[c] === 'boolean' ? (s[c] ? 'Yes' : 'No') : s[c])),
+  q(lastMeeting(s) || ''), q(entries(s, 'meeting').length), q(openItems(s).length)].join(',')).join('\n');
+  download(new Blob([head + '\n' + body], { type: 'text/csv' }), `advising-roster-${today()}.csv`);
+}
+function exportPlain() {
+  confirmBox('Export unencrypted', 'This writes a readable file containing every student record, note and email on your machine. It is not protected by your passcode. Save it somewhere you would be comfortable storing a printed advising file.', 'Export anyway', () => {
+    const payload = { app: APP, kind: 'plain-export', schema: APP_VER, exportedAt: new Date().toISOString(), rev: Vault.meta.rev, deviceId: Vault.deviceId, data: D() };
+    download(new Blob([JSON.stringify(payload, null, 1)], { type: 'application/json' }), `advising-hub-PLAIN-${today()}.json`);
+  }, 'danger');
+}
+
+/* ═══ RESTORE / MERGE GUARD ══════════════════════════════ */
+function restoreFlow() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.hub,.json';
+  inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    let peek;
+    try { peek = JSON.parse(await f.text()); }
+    catch (e) { return toast('That file is not readable as a backup.', 'bad'); }
+    if (peek.app !== APP) return toast('That is not an Advising Hub backup.', 'bad');
+    const encrypted = peek.kind !== 'plain-export';
+    modal({
+      title: 'Restore from a backup',
+      body: `${compareHtml(peek)}
+        ${encrypted ? `<div class="field" style="margin-top:14px"><label>Passcode for that backup</label><input type="password" id="r-pass" placeholder="Passcode used when it was made"></div>` : ''}
+        <p class="hint" style="margin-top:12px">Restoring replaces what is in this browser. A copy of your current data downloads first, so nothing is lost either way.</p>`,
+      buttons: [{ label: 'Cancel' }, {
+        label: 'Replace with this backup', kind: 'danger', onClick: async (bg, close) => {
+          try {
+            const pass = encrypted ? $('#r-pass', bg).value : null;
+            const { payload, data } = await Vault.openBackup(f, pass);
+            await Vault.downloadBackup();
+            await Vault.replaceData(data, payload);
+            close(); paintStatus(); go('dash');
+            toast(`Restored ${data.students.length} students`, 'good');
+          } catch (e) { toast(encrypted ? 'That passcode does not open this backup.' : e.message, 'bad'); }
+        }
+      }],
+    });
+  };
+  inp.click();
+}
+function compareHtml(peek) {
+  const mine = { students: students().length, entries: students().reduce((n, s) => n + (s.entries || []).length, 0), rev: Vault.meta.rev, when: Vault.meta.updatedAt };
+  const theirs = { students: (peek.counts || {}).students != null ? peek.counts.students : (peek.data ? peek.data.students.length : '?'), entries: (peek.counts || {}).entries != null ? peek.counts.entries : '?', rev: peek.rev, when: peek.updatedAt || peek.exportedAt };
+  const older = peek.rev != null && Vault.meta.rev != null && peek.rev < Vault.meta.rev;
+  const sameDevice = peek.deviceId === Vault.deviceId;
+  return `<div class="t-wrap"><table><thead><tr><th></th><th>In this browser</th><th>In the backup file</th></tr></thead><tbody>
+    <tr><td class="sub">Students</td><td class="mono">${mine.students}</td><td class="mono">${theirs.students}</td></tr>
+    <tr><td class="sub">Record entries</td><td class="mono">${mine.entries}</td><td class="mono">${theirs.entries}</td></tr>
+    <tr><td class="sub">Last change</td><td class="mono">${esc(fmtDate(mine.when, 'time'))}</td><td class="mono">${esc(fmtDate(theirs.when, 'time'))}</td></tr>
+    <tr><td class="sub">Revision</td><td class="mono">${mine.rev}</td><td class="mono">${theirs.rev != null ? theirs.rev : '—'}</td></tr>
+  </tbody></table></div>
+  ${older ? `<p style="margin-top:12px;color:var(--urgent);font-size:13px;line-height:1.6"><b>This backup is behind what's in this browser.</b> ${sameDevice ? '' : 'It was last written on a different machine. '}Restoring it will drop the newer changes here.</p>` : ''}`;
+}
+
+/* ═══ FILE SYNC ══════════════════════════════════════════ */
+async function fileLoadFlow() {
+  try {
+    const payload = await Vault.readLinkedFile();
+    if (!payload) return toast('Could not read the linked file.', 'bad');
+    if (payload.rev != null && Vault.meta.rev != null && payload.rev < Vault.meta.rev && payload.deviceId !== Vault.deviceId) {
+      return confirmBox('The file is behind this browser',
+        `The linked file is at revision ${payload.rev}; this browser is at ${Vault.meta.rev}. Loading it will drop newer changes made here.`,
+        'Load it anyway', () => doFileLoad(payload), 'danger');
+    }
+    doFileLoad(payload);
+  } catch (e) { toast(e.message, 'bad'); }
+}
+async function doFileLoad(payload) {
+  modal({
+    title: 'Load from the linked file',
+    body: `<div class="field"><label>Passcode that file was written with</label><input type="password" id="fl-pass" placeholder="Usually the same as this one"></div>`,
+    buttons: [{ label: 'Cancel' }, {
+      label: 'Load', kind: 'pri', onClick: async (bg, close) => {
+        try {
+          const key = await Crypt.deriveKey($('#fl-pass', bg).value, b64d(payload.kdf.salt), payload.kdf.iters);
+          const data = await Crypt.decrypt(key, payload.iv, payload.ct);
+          await Vault.replaceData(data, payload);
+          close(); paintStatus(); go('dash'); toast('Loaded from the linked file', 'good');
+        } catch (e) { toast('That passcode does not open the file.', 'bad'); }
+      }
+    }],
+  });
+}
+
+/* ═══ ACTIONS ════════════════════════════════════════════ */
+const ACT = {
+  'new-student': () => {
+    modal({
+      title: 'Add a student',
+      body: `<div class="fields">
+        <div class="field"><label>First name</label><input id="n-first"></div>
+        <div class="field"><label>Last name</label><input id="n-last"></div>
+        <div class="field"><label>Student ID</label><input id="n-sid"></div>
+        <div class="field"><label>Class year</label><select id="n-year">${['', 'Freshman (1)', 'Sophomore (2)', 'Junior (3)', 'Senior (4)'].map(y => `<option>${y}</option>`).join('')}</select></div>
+        <div class="field"><label>Program</label><select id="n-prog"><option value="">— none —</option>${Object.entries(allTemplates()).map(([k, t]) => `<option value="${esc(k)}">${esc(t.title)}</option>`).join('')}</select></div>
+      </div>`,
+      buttons: [{ label: 'Cancel' }, {
+        label: 'Add', kind: 'pri', onClick: async (bg, close) => {
+          const s = newStudent({
+            first: $('#n-first', bg).value.trim(), last: $('#n-last', bg).value.trim(),
+            sid: $('#n-sid', bg).value.trim(), classYear: $('#n-year', bg).value, program: $('#n-prog', bg).value,
+          });
+          if (!s.first && !s.last) return toast('A name would help.', 'bad');
+          students().push(s); close(); await save();
+          S.tab = 'record'; go('student', s.id);
+        }
+      }],
+    });
+  },
+  'quick-log': () => {
+    const list = students().filter(s => !s.archived).sort((a, b) => sortName(a).localeCompare(sortName(b)));
+    if (!list.length) return ACT['new-student']();
+    modal({
+      title: 'Log a meeting',
+      body: `<div class="field"><label>Which student?</label><select id="q-student">${list.map(s => `<option value="${s.id}">${esc(s.last)}, ${esc(s.first)}</option>`).join('')}</select></div>`,
+      buttons: [{ label: 'Cancel' }, {
+        label: 'Continue', kind: 'pri', onClick: (bg, close) => {
+          const s = getStudent($('#q-student', bg).value); close();
+          entryModal(s, null, { type: 'meeting', title: 'Advising meeting' });
+        }
+      }],
+    });
+  },
+  'add-entry': () => entryModal(getStudent(S.studentId)),
+  'quick-note': () => entryModal(getStudent(S.studentId), null, { type: 'note' }),
+  'drop-email': () => {
+    const z = $('#emaildrop');
+    z.style.display = z.style.display === 'none' ? '' : 'none';
+    if (z.style.display === '') {
+      z.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = '.msg,.eml'; inp.multiple = true;
+      inp.onchange = async () => {
+        const s = getStudent(S.studentId); let n = 0;
+        for (const f of inp.files) { try { await ingestEmail(s, f); n++; } catch (e) { toast(`${f.name}: ${e.message}`, 'bad'); } }
+        if (n) { await save(); render(); toast(`${n} email${n > 1 ? 's' : ''} added`, 'good'); }
+      };
+      z.onclick = () => inp.click();
+    }
+  },
+  'add-semester': async () => {
+    const s = getStudent(S.studentId);
+    (s.plan = s.plan || []).push({ id: uid(), label: `Semester ${s.plan.length + 1}`, courses: [{ code: '', section: '', title: '', credits: '' }] });
+    await save(); render();
+  },
+  'add-elective': async () => {
+    const s = getStudent(S.studentId);
+    (s.curriculum.electives = s.curriculum.electives || []).push({ code: '', name: '', cr: '', wic: false });
+    await save(); render();
+  },
+  'archive-student': async () => {
+    const s = getStudent(S.studentId); s.archived = !s.archived; await save(); render();
+    toast(s.archived ? `${fullName(s)} archived` : `${fullName(s)} restored`, 'good');
+  },
+  'delete-student': () => {
+    const s = getStudent(S.studentId);
+    confirmBox('Delete this student', `Everything for <b>${esc(fullName(s))}</b> goes — ${(s.entries || []).length} record entries, the curriculum checklist and the semester plan. This cannot be undone. Archiving keeps the record but hides it from the active list.`, 'Delete permanently', async () => {
+      D().students = students().filter(x => x.id !== s.id);
+      await save(); go('students'); toast('Deleted', 'good');
+    }, 'danger');
+  },
+  'print': () => window.print(),
+  'backup': async () => { await Vault.downloadBackup(); paintStatus(); toast('Backup downloaded', 'good'); },
+  'restore': () => restoreFlow(),
+  'import-xlsx': () => importXlsxFlow(),
+  'import-onenote': () => oneNoteFlow(S.studentId),
+  'export-csv': () => exportCsv(),
+  'export-plain': () => exportPlain(),
+  'file-new': async () => { try { await Vault.linkFile('save'); await Vault.writeFile(); paintStatus(); render(); toast('File linked — changes save straight to it', 'good'); } catch (e) { } },
+  'file-open': async () => { try { await Vault.linkFile('open'); paintStatus(); render(); toast('File linked. Use “Load from it” to pull that copy in.', 'good'); } catch (e) { } },
+  'file-write': async () => { const ok = await Vault.writeFile(); paintStatus(); render(); toast(ok ? 'Saved to the file' : 'Could not write to the file', ok ? 'good' : 'bad'); },
+  'file-load': () => fileLoadFlow(),
+  'file-unlink': async () => { await Vault.unlinkFile(); paintStatus(); render(); toast('Unlinked. Changes stay in this browser only.', 'good'); },
+  'lock': () => lockUp(),
+  'passcode': () => {
+    modal({
+      title: 'Change passcode',
+      body: `<div class="fields">
+        <div class="field wide"><label>Current passcode</label><input type="password" id="p-old"></div>
+        <div class="field wide"><label>New passcode</label><input type="password" id="p-new"></div>
+        <div class="field wide"><label>New passcode again</label><input type="password" id="p-new2"></div>
+      </div><p class="hint" style="margin-top:10px">Backup files already written keep their old passcode. Write a fresh backup afterwards.</p>`,
+      buttons: [{ label: 'Cancel' }, {
+        label: 'Change it', kind: 'pri', onClick: async (bg, close) => {
+          const a = $('#p-new', bg).value, b = $('#p-new2', bg).value;
+          if (a.length < 6) return toast('Use at least 6 characters.', 'bad');
+          if (a !== b) return toast('The two new passcodes do not match.', 'bad');
+          try { await Vault.changePasscode($('#p-old', bg).value, a); close(); toast('Passcode changed', 'good'); }
+          catch (e) { toast('The current passcode is wrong.', 'bad'); }
+        }
+      }],
+    });
+  },
+  'wipe': () => {
+    confirmBox('Erase everything on this machine', 'This deletes the encrypted database in this browser — every student, note and email. Backup files saved elsewhere are not touched. Download a backup first if you have any doubt.', 'Erase it', async () => {
+      await IDB.del('vault'); await IDB.del('fileHandle'); await IDB.del('dirtyCount'); await IDB.del('lastBackup');
+      location.reload();
+    }, 'danger');
+  },
+  'toggle-archived': () => { S.showArchived = !S.showArchived; render(); },
+};
+
+/* ═══ EVENT WIRING ═══════════════════════════════════════ */
+function wire() {
+  document.addEventListener('click', async ev => {
+    const t = ev.target.closest('[data-nav],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
+    if (!t) return;
+    const s = () => getStudent(S.studentId);
+
+    if (t.dataset.nav) return go(t.dataset.nav);
+    if (t.dataset.open) {
+      const eid = t.dataset.entry;
+      S.tab = 'record'; go('student', t.dataset.open);
+      if (eid) { const el = document.getElementById('ev-' + eid); if (el) { el.scrollIntoView({ block: 'center' }); el.style.transition = 'background .5s'; } }
+      return;
+    }
+    if (t.dataset.act) { ev.preventDefault(); return ACT[t.dataset.act] && ACT[t.dataset.act](); }
+    if (t.dataset.tab) { S.tab = t.dataset.tab; return render(); }
+    if (t.dataset.filter) { S.filter = t.dataset.filter; return render(); }
+    if (t.dataset.sort) { S.sort = t.dataset.sort; return render(); }
+    if (t.dataset.expand) {
+      const b = document.querySelector(`[data-body="${t.dataset.expand}"]`);
+      b.classList.remove('ev-fold'); t.remove(); return;
+    }
+    if (t.dataset.req) {
+      const st = s(); st.curriculum.done = st.curriculum.done || {};
+      st.curriculum.done[t.dataset.req] ? delete st.curriculum.done[t.dataset.req] : st.curriculum.done[t.dataset.req] = true;
+      await save(); return render();
+    }
+    if (t.dataset.gbd) {
+      const st = s(); st.curriculum.gbd = st.curriculum.gbd || {};
+      const g = st.curriculum.gbd[t.dataset.gbd] = st.curriculum.gbd[t.dataset.gbd] || {};
+      g.done = !g.done; await save(); return render();
+    }
+    if (t.dataset.edit) return entryModal(s(), (s().entries || []).find(e => e.id === t.dataset.edit));
+    if (t.dataset.del) {
+      const e = (s().entries || []).find(x => x.id === t.dataset.del);
+      return confirmBox('Delete this entry', `“${esc(e.title || typeLabel(e.type))}” from ${esc(fmtDate(e.date))} will be removed from the record.`, 'Delete', async () => {
+        s().entries = s().entries.filter(x => x.id !== t.dataset.del); await save(); render();
+      }, 'danger');
+    }
+    if (t.dataset.toggleDone) {
+      const e = (s().entries || []).find(x => x.id === t.dataset.toggleDone);
+      e.status = e.status === 'done' ? 'open' : 'done'; await save(); return render();
+    }
+    if (t.dataset.resolve) {
+      const [sid, eid] = t.dataset.resolve.split(':');
+      const e = (getStudent(sid).entries || []).find(x => x.id === eid);
+      e.status = 'done'; await save(); return render();
+    }
+    if (t.dataset.planadd) { const st = s(); st.plan[+t.dataset.planadd].courses.push({ code: '', section: '', title: '', credits: '' }); await save(); return render(); }
+    if (t.dataset.planx) {
+      const i = +t.dataset.planx, st = s();
+      return confirmBox('Remove semester', `“${esc(st.plan[i].label)}” and its courses go.`, 'Remove', async () => { st.plan.splice(i, 1); await save(); render(); }, 'danger');
+    }
+    if (t.dataset.pcx) { const [si, ci] = t.dataset.pcx.split(':').map(Number); s().plan[si].courses.splice(ci, 1); await save(); return render(); }
+    if (t.dataset.pchl) { const [si, ci] = t.dataset.pchl.split(':').map(Number); const c = s().plan[si].courses[ci]; c.highlight = !c.highlight; await save(); return render(); }
+    if (t.dataset.elx) { s().curriculum.electives.splice(+t.dataset.elx, 1); await save(); return render(); }
+    if (t.dataset.elwic) { const e = s().curriculum.electives[+t.dataset.elwic]; e.wic = !e.wic; await save(); return render(); }
+  });
+
+  // field edits (debounced save)
+  let sv;
+  const queue = () => { clearTimeout(sv); sv = setTimeout(() => save(), 700); };
+  document.addEventListener('input', ev => {
+    const el = ev.target;
+    const st = getStudent(S.studentId);
+    if (el.id === 'search') { S.q = el.value.trim(); return render(); }
+    if (!st) return;
+    if (el.dataset.sf) { st[el.dataset.sf] = el.dataset.bool ? !!el.value : el.value; return queue(); }
+    if (el.dataset.plan) { const [i, k] = el.dataset.plan.split(':'); st.plan[+i][k] = el.value; return queue(); }
+    if (el.dataset.pc) { const [i, j, k] = el.dataset.pc.split(':'); st.plan[+i].courses[+j][k] = el.value; return queue(); }
+    if (el.dataset.el) { const [i, k] = el.dataset.el.split(':'); st.curriculum.electives[+i][k] = el.value; return queue(); }
+    if (el.dataset.gbdcourse) {
+      st.curriculum.gbd = st.curriculum.gbd || {};
+      const g = st.curriculum.gbd[el.dataset.gbdcourse] = st.curriculum.gbd[el.dataset.gbdcourse] || {};
+      g.course = el.value; return queue();
+    }
+  });
+  document.addEventListener('change', ev => {
+    const el = ev.target;
+    if (el.dataset.f) { S[el.dataset.f] = el.value; return render(); }
+    if (el.dataset.act === 'autolock') { D().settings.autoLockMin = +el.value; save(); resetIdle(); return; }
+    const st = getStudent(S.studentId);
+    if (st && el.dataset.sf) { st[el.dataset.sf] = el.dataset.bool ? !!el.value : el.value; save(); if (el.dataset.sf === 'program') render(); }
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); $('#search').focus(); $('#search').select(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); ACT['backup'](); }
+    if (e.key === 'Escape' && document.activeElement === $('#search')) { $('#search').value = ''; S.q = ''; render(); }
+    resetIdle();
+  });
+  document.addEventListener('mousemove', resetIdle, { passive: true });
+  $('#menu-btn').onclick = () => $('#rail').classList.toggle('open');
+  window.addEventListener('vault-saved', paintStatus);
+  window.addEventListener('beforeunload', e => {
+    if (!Vault.fileLinked && Vault.dirty > 15) { e.preventDefault(); e.returnValue = ''; }
+  });
+}
+
+/* ═══ LOCK ═══════════════════════════════════════════════ */
+function resetIdle() {
+  clearTimeout(idleTimer);
+  const mins = Vault.data ? (D().settings.autoLockMin || 30) : 0;
+  if (!mins) return;
+  idleTimer = setTimeout(() => lockUp(true), mins * 60000);
+}
+function lockUp(auto) {
+  Vault.lock();
+  $('#shell').classList.remove('on');
+  $('#lock').style.display = 'flex';
+  $('#pass').value = '';
+  $('#lock-err').textContent = auto ? 'Locked after a spell of inactivity.' : '';
+  setTimeout(() => $('#pass').focus(), 50);
+}
+
+async function boot() {
+  let exists;
+  try { exists = await Vault.exists(); }
+  catch (err) {
+    $('#lock-title').textContent = 'Storage is blocked';
+    $('#lock-sub').textContent = 'Cannot start';
+    $('#lock-form').style.display = 'none';
+    $('#lock-note').innerHTML = `This browser will not let the page store anything, so there is nowhere to keep your records.
+      That usually means the file was opened straight off the disk, or the browser is in private mode with site data switched off.
+      Put the file on a web address you control and open it from there — a private GitHub Pages URL works, and your records still never leave this machine.`;
+    return;
+  }
+  const lock = $('#lock');
+  $('#lock-title').textContent = exists ? 'Advising Hub' : 'Set up your hub';
+  $('#lock-sub').textContent = exists ? 'Locked' : 'First run on this machine';
+  $('#pass').placeholder = exists ? 'Passcode' : 'Choose a passcode';
+  $('#pass2').style.display = exists ? 'none' : '';
+  $('#lock-go').textContent = exists ? 'Unlock' : 'Create the vault';
+  $('#lock-note').innerHTML = exists
+    ? `Records are encrypted on this machine. <strong>Anthropic, this browser's maker, and anyone else can't read them without this passcode</strong> — and there is no way to reset it.`
+    : `Everything you enter is encrypted with this passcode and stored only in this browser. Nothing is uploaded. <strong>There is no reset and no recovery</strong> — if you lose the passcode, the records are gone. Write it down somewhere you'd keep a key.`;
+  $('#lock-restore').style.display = exists ? 'none' : '';
+
+  $('#lock-form').onsubmit = async ev => {
+    ev.preventDefault();
+    const p = $('#pass').value;
+    $('#lock-err').textContent = '';
+    try {
+      if (exists) await Vault.unlock(p);
+      else {
+        if (p.length < 6) return $('#lock-err').textContent = 'Use at least 6 characters.';
+        if (p !== $('#pass2').value) return $('#lock-err').textContent = 'The two entries do not match.';
+        await Vault.create(p);
+      }
+    } catch (e) { return $('#lock-err').textContent = 'That passcode does not open this vault.'; }
+    lock.style.display = 'none';
+    $('#shell').classList.add('on');
+    if (Vault.fileLinked) {
+      const ok = await Vault.ensureFilePermission();
+      if (!ok) toast('The linked file needs permission again — reconnect it under Backup & data.', 'bad');
+    }
+    paintStatus(); resetIdle(); go('dash');
+  };
+  let seedFile = null;
+  $('#lock-restore').querySelector('button').onclick = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.hub,.json';
+    inp.onchange = () => {
+      seedFile = inp.files[0]; if (!seedFile) return;
+      $('#lock-sub').textContent = 'Restoring ' + seedFile.name;
+      $('#pass').placeholder = 'Passcode that backup was made with';
+      $('#pass2').style.display = 'none';
+      $('#lock-go').textContent = 'Restore onto this machine';
+      $('#lock-note').innerHTML = `The backup is decrypted here and re-encrypted into this browser under the same passcode. Nothing is uploaded.`;
+      $('#lock-restore').style.display = 'none';
+      $('#pass').focus();
+    };
+    inp.click();
+  };
+  const originalSubmit = $('#lock-form').onsubmit;
+  $('#lock-form').onsubmit = async ev => {
+    if (!seedFile) return originalSubmit(ev);
+    ev.preventDefault();
+    const p = $('#pass').value;
+    $('#lock-err').textContent = '';
+    try {
+      const peek = JSON.parse(await seedFile.text());
+      if (peek.app !== APP) throw new Error('not a hub backup');
+      await Vault.create(p);
+      const { payload, data } = await Vault.openBackup(seedFile, p);
+      await Vault.replaceData(data, payload);
+    } catch (e) {
+      await IDB.del('vault');
+      return $('#lock-err').textContent = 'That passcode does not open this backup.';
+    }
+    $('#lock').style.display = 'none';
+    $('#shell').classList.add('on');
+    paintStatus(); resetIdle(); go('dash');
+    toast(`Restored ${students().length} students onto this machine`, 'good');
+  };
+  setTimeout(() => $('#pass').focus(), 60);
+}
+
+wire();
+boot();
+</script>
+</body>
+</html>
