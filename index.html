@@ -57,20 +57,14 @@ a{color:var(--accent)}
 .dot{width:6px;height:6px;border-radius:50%;background:#3f8f6a;flex:none}
 .dot.warn{background:#c98a00}
 .dot.off{background:#5a6070}
-.nav{padding:10px 8px;display:flex;flex-direction:column;gap:1px}
+.nav{padding:10px 8px;display:flex;flex-direction:column;gap:1px;flex:1;overflow-y:auto}
 .nav button{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;font-size:13px;color:#aeb4c2;text-align:left;width:100%}
 .nav button:hover{background:rgba(255,255,255,.06);color:#fff}
 .nav button.on{background:rgba(255,255,255,.11);color:#fff}
 .nav .n-count{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:#7d859a}
 .nav button.on .n-count{color:#c7cbd4}
 .nav .n-count.hot{color:#ff8b8b}
-.rail-sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#5d6474;padding:14px 18px 6px}
-.rail-list{flex:1;overflow-y:auto;padding:0 8px 8px}
-.rail-item{display:flex;align-items:baseline;gap:8px;padding:6px 10px;border-radius:6px;width:100%;text-align:left;font-size:12.5px;color:#aeb4c2}
-.rail-item:hover{background:rgba(255,255,255,.06);color:#fff}
-.rail-item .tick{width:3px;height:13px;border-radius:2px;flex:none;align-self:center}
-.rail-item .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rail-item .when{margin-left:auto;font-family:var(--mono);font-size:10px;color:#6d7488;flex:none}
+
 .rail-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:6px}
 .rail-bottom button{flex:1;font-size:11.5px;color:#aeb4c2;padding:7px;border-radius:5px;background:rgba(255,255,255,.06)}
 .rail-bottom button:hover{background:rgba(255,255,255,.12);color:#fff}
@@ -346,6 +340,8 @@ tbody tr.audit-urgent td:first-child{box-shadow:inset 3px 0 0 var(--urgent)}
 @media print{
   tbody tr[class*="audit-"]{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.tabs .tcount.hot{color:var(--urgent);font-weight:500}
+
 </style>
 </head>
 <body>
@@ -372,8 +368,6 @@ tbody tr.audit-urgent td:first-child{box-shadow:inset 3px 0 0 var(--urgent)}
       <div class="rail-status" id="rail-status"></div>
     </div>
     <nav class="nav" id="nav"></nav>
-    <div class="rail-sec" id="rail-sec-label">Priority</div>
-    <div class="rail-list" id="rail-list"></div>
     <div class="rail-bottom">
       <button data-act="backup">Back up</button>
       <button data-act="lock">Lock</button>
@@ -1096,7 +1090,6 @@ function paintRail() {
   const all = students().filter(s => !s.archived);
   const flagged = flagRows(all);
   const urgentN = flagged.filter(f => f.tone === 'urgent').length;
-  const holds = all.filter(s => s.registrationHold).length;
 
   $('#nav').innerHTML = [
     ['dash', 'Dashboard', flagged.length, urgentN > 0],
@@ -1105,16 +1098,6 @@ function paintRail() {
   ].map(([v, label, n, hot]) =>
     `<button data-nav="${v}" class="${S.view === v ? 'on' : ''}">${label}${n != null ? `<span class="n-count${hot ? ' hot' : ''}">${n}</span>` : ''}</button>`
   ).join('');
-
-  $('#rail-list').innerHTML = flagged.length
-    ? flagged.slice(0, 40).map(r => `
-      <button class="rail-item" data-open="${r.s.id}"${r.e ? ` data-entry="${r.e.id}"` : ''}>
-        <span class="tick" style="background:var(--${r.tone})"></span>
-        <span class="who">${esc(r.s.last || fullName(r.s))}<span style="color:#6d7488"> · ${esc(r.label.slice(0, 22))}</span></span>
-        ${r.due ? `<span class="when">${r.due.slice(5).replace('-', '/')}</span>` : ''}
-      </button>`).join('')
-    : `<p style="font-size:12px;color:#5d6474;padding:6px 10px;line-height:1.5">Nothing flagged. Use <b>Flag an issue</b> on a student's page, or tick a standing flag on their profile.</p>`;
-  $('#rail-sec-label').textContent = holds ? `Priority · ${holds} hold${holds > 1 ? 's' : ''}` : 'Priority';
 }
 
 function paintStatus() {
@@ -1391,6 +1374,7 @@ function renderStudent(p) {
 
     <div class="tabs no-print">
       <button data-tab="record" class="${S.tab === 'record' ? 'on' : ''}">Record<span class="tcount">${(s.entries || []).length}</span></button>
+      <button data-tab="priority" class="${S.tab === 'priority' ? 'on' : ''}">Priority${open.length ? `<span class="tcount${open.some(e => e.priority === 'urgent') ? ' hot' : ''}">${open.length}</span>` : ''}</button>
       <button data-tab="profile" class="${S.tab === 'profile' ? 'on' : ''}">Profile</button>
       <button data-tab="curriculum" class="${S.tab === 'curriculum' ? 'on' : ''}">Curriculum</button>
       <button data-tab="plan" class="${S.tab === 'plan' ? 'on' : ''}">Semester plan<span class="tcount">${(s.plan || []).length}</span></button>
@@ -1399,6 +1383,7 @@ function renderStudent(p) {
 
   const body = $('#tabbody');
   if (S.tab === 'record') renderRecordTab(body, s, counts);
+  else if (S.tab === 'priority') renderPriorityTab(body, s);
   else if (S.tab === 'profile') renderProfileTab(body, s);
   else if (S.tab === 'curriculum') renderCurriculumTab(body, s);
   else renderPlanTab(body, s);
@@ -1614,6 +1599,39 @@ async function ingestEmail(s, file) {
     body, attachments: (m.attachments || []).map(a => ({ name: a.name, type: a.type })),
     priority: 'none', status: 'open', createdAt: new Date().toISOString(), source: file.name,
   });
+}
+
+/* ─── Priority tab: only what's flagged ─────────────────── */
+function renderPriorityTab(body, s) {
+  const flagged = (s.entries || []).filter(e => entryTone(e));
+  const rank = e => (e.priority === 'urgent' ? 0 : 1);
+  const openList = flagged.filter(e => e.status !== 'done')
+    .sort((a, b) => rank(a) - rank(b) || (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || (b.date || '').localeCompare(a.date || ''));
+  const doneList = flagged.filter(e => e.status === 'done')
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const overdue = openList.filter(e => e.dueDate && e.dueDate <= today()).length;
+
+  if (!flagged.length) {
+    body.innerHTML = `<div class="empty"><h3>Nothing flagged for ${esc(fullName(s))}</h3>
+      <p>Anything you mark Watch or Urgent — a note, an email, a meeting, a flag — collects here, newest concern first.</p>
+      <button class="btn pri" data-act="add-flag">Flag an issue</button></div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div class="filters no-print">
+      <span class="chips">
+        ${openList.filter(e => e.priority === 'urgent').length ? `<span class="chip urgent">${openList.filter(e => e.priority === 'urgent').length} urgent</span>` : ''}
+        ${openList.filter(e => e.priority !== 'urgent').length ? `<span class="chip watch">${openList.filter(e => e.priority !== 'urgent').length} watch</span>` : ''}
+        ${overdue ? `<span class="chip urgent">${overdue} past due</span>` : ''}
+        ${doneList.length ? `<span class="chip ok">${doneList.length} resolved</span>` : ''}
+      </span>
+      <div class="spacer"></div>
+      <button class="btn sm" data-act="add-flag">Flag an issue</button>
+    </div>
+    ${openList.length ? `<div class="spine">${openList.map(e => eventHtml(s, e)).join('')}</div>`
+      : `<div class="card sub" style="margin-bottom:20px">Nothing outstanding — everything flagged has been resolved.</div>`}
+    ${doneList.length ? `<div class="sec-label">Resolved</div>
+      <div class="spine" style="opacity:.72">${doneList.map(e => eventHtml(s, e)).join('')}</div>` : ''}`;
 }
 
 /* ═══ PROFILE TAB ════════════════════════════════════════ */
