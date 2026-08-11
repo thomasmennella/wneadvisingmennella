@@ -1027,8 +1027,29 @@ function entries(s, type) {
   return (type && type !== 'all' ? list.filter(e => e.type === type) : list)
     .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
 }
+function entryTone(e) {
+  if (e.priority === 'urgent') return 'urgent';
+  if (e.priority === 'watch') return 'watch';
+  return e.type === 'flag' ? 'watch' : '';
+}
 function openItems(s) {
-  return (s.entries || []).filter(e => e.priority && e.priority !== 'none' && e.status !== 'done');
+  return (s.entries || []).filter(e => e.status !== 'done' && entryTone(e));
+}
+/* Flagged rows = unresolved flag/priority entries + the standing flags on the profile. */
+function flagRows(list) {
+  const rows = [];
+  list.forEach(s => {
+    openItems(s).forEach(e => rows.push({
+      s, e, tone: entryTone(e), label: e.title || stripHtml(e.body).slice(0, 70) || '(untitled)',
+      kind: typeLabel(e.type), due: e.dueDate || '', logged: e.date || '',
+    }));
+    studentFlags(s).forEach(f => rows.push({
+      s, sf: f.key, tone: f.k, label: f.t, kind: 'Standing flag', due: '', logged: '',
+    }));
+  });
+  return rows.sort((a, b) => (a.tone === 'urgent' ? 0 : 1) - (b.tone === 'urgent' ? 0 : 1)
+    || (a.due || '9999').localeCompare(b.due || '9999')
+    || sortName(a.s).localeCompare(sortName(b.s)));
 }
 function lastMeeting(s) {
   const m = entries(s, 'meeting')[0];
@@ -1036,10 +1057,10 @@ function lastMeeting(s) {
 }
 function studentFlags(s) {
   const f = [];
-  if (s.registrationHold) f.push({ k: 'urgent', t: 'Registration hold' });
-  if (s.academicConcern) f.push({ k: 'watch', t: 'Academic concern' });
-  if (s.scholarshipCheck) f.push({ k: 'watch', t: 'Scholarship check' });
-  if (s.otherFlag) f.push({ k: 'watch', t: s.otherFlag });
+  if (s.registrationHold) f.push({ k: 'urgent', t: 'Registration hold', key: 'registrationHold' });
+  if (s.academicConcern) f.push({ k: 'watch', t: 'Academic concern', key: 'academicConcern' });
+  if (s.scholarshipCheck) f.push({ k: 'watch', t: 'Scholarship check', key: 'scholarshipCheck' });
+  if (s.otherFlag) f.push({ k: 'watch', t: s.otherFlag, key: 'otherFlag' });
   return f;
 }
 function priorityRank(e) { return e.priority === 'urgent' ? 0 : e.priority === 'watch' ? 1 : 2; }
@@ -1073,10 +1094,8 @@ function curriculumProgress(s) {
 /* ═══ RAIL ═══════════════════════════════════════════════ */
 function paintRail() {
   const all = students().filter(s => !s.archived);
-  const flagged = [];
-  all.forEach(s => openItems(s).forEach(e => flagged.push({ s, e })));
-  flagged.sort((a, b) => priorityRank(a.e) - priorityRank(b.e) || (a.e.dueDate || '9999').localeCompare(b.e.dueDate || '9999'));
-  const urgentN = flagged.filter(f => f.e.priority === 'urgent').length;
+  const flagged = flagRows(all);
+  const urgentN = flagged.filter(f => f.tone === 'urgent').length;
   const holds = all.filter(s => s.registrationHold).length;
 
   $('#nav').innerHTML = [
@@ -1088,13 +1107,13 @@ function paintRail() {
   ).join('');
 
   $('#rail-list').innerHTML = flagged.length
-    ? flagged.slice(0, 40).map(({ s, e }) => `
-      <button class="rail-item" data-open="${s.id}" data-entry="${e.id}">
-        <span class="tick" style="background:var(--${e.priority === 'urgent' ? 'urgent' : 'watch'})"></span>
-        <span class="who">${esc(s.last || fullName(s))}<span style="color:#6d7488"> · ${esc((e.title || e.type).slice(0, 22))}</span></span>
-        ${e.dueDate ? `<span class="when">${e.dueDate.slice(5).replace('-', '/')}</span>` : ''}
+    ? flagged.slice(0, 40).map(r => `
+      <button class="rail-item" data-open="${r.s.id}"${r.e ? ` data-entry="${r.e.id}"` : ''}>
+        <span class="tick" style="background:var(--${r.tone})"></span>
+        <span class="who">${esc(r.s.last || fullName(r.s))}<span style="color:#6d7488"> · ${esc(r.label.slice(0, 22))}</span></span>
+        ${r.due ? `<span class="when">${r.due.slice(5).replace('-', '/')}</span>` : ''}
       </button>`).join('')
-    : `<p style="font-size:12px;color:#5d6474;padding:6px 10px;line-height:1.5">Nothing flagged. Mark an item urgent or watch and it shows up here.</p>`;
+    : `<p style="font-size:12px;color:#5d6474;padding:6px 10px;line-height:1.5">Nothing flagged. Use <b>Flag an issue</b> on a student's page, or tick a standing flag on their profile.</p>`;
   $('#rail-sec-label').textContent = holds ? `Priority · ${holds} hold${holds > 1 ? 's' : ''}` : 'Priority';
 }
 
@@ -1127,15 +1146,16 @@ function go(view, id) { S.view = view; S.studentId = id || null; S.q = ''; $('#s
 /* ═══ DASHBOARD ══════════════════════════════════════════ */
 function renderDash(p) {
   const all = students().filter(s => !s.archived);
-  const flagged = [];
-  all.forEach(s => openItems(s).forEach(e => flagged.push({ s, e })));
-  flagged.sort((a, b) => priorityRank(a.e) - priorityRank(b.e) || (a.e.dueDate || '9999').localeCompare(b.e.dueDate || '9999'));
-  const urgent = flagged.filter(f => f.e.priority === 'urgent');
-  const due = flagged.filter(f => f.e.dueDate && f.e.dueDate <= today());
+  const flagged = flagRows(all);
+  const urgent = flagged.filter(f => f.tone === 'urgent');
+  const due = flagged.filter(f => f.due && f.due <= today());
   const stale = all.map(s => ({ s, last: lastMeeting(s) }))
     .filter(x => !x.last || daysBetween(x.last, today()) > 60)
     .sort((a, b) => (a.last || '').localeCompare(b.last || ''));
-  const holds = all.filter(s => s.registrationHold);
+  const ATTN = { 'delayed': 'urgent', 'incomplete': 'urgent', 'needs review': 'watch' };
+  const attn = all.filter(s => ATTN[String(s.auditStatus || '').toLowerCase().trim()])
+    .sort((a, b) => (ATTN[a.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1) - (ATTN[b.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1)
+      || sortName(a.s || a).localeCompare(sortName(b.s || b)));
 
   if (!all.length) {
     p.innerHTML = `<div class="empty" style="padding-top:70px">
@@ -1160,24 +1180,44 @@ function renderDash(p) {
     <div class="grid metrics">
       <div class="metric"><div class="k">Advisees</div><div class="v">${all.length}</div><div class="s">${students().filter(s => s.archived).length} archived</div></div>
       <div class="metric${urgent.length ? ' hot' : ''}"><div class="k">Urgent open</div><div class="v">${urgent.length}</div><div class="s">${flagged.length - urgent.length} on watch</div></div>
-      <div class="metric${due.length ? ' warm' : ''}"><div class="k">Past due</div><div class="v">${due.length}</div><div class="s">follow-ups overdue</div></div>
-      <div class="metric${holds.length ? ' hot' : ''}"><div class="k">Registration holds</div><div class="v">${holds.length}</div><div class="s">${all.filter(s => s.academicConcern).length} academic concerns</div></div>
+      <div class="metric${due.length ? ' warm' : ''}"><div class="k">Past due</div><div class="v">${due.length}</div><div class="s">follow-up date has passed</div></div>
+      <div class="metric${attn.length ? ' warm' : ''}"><div class="k">Audit attention</div><div class="v">${attn.length}</div><div class="s">delayed, incomplete or under review</div></div>
       <div class="metric"><div class="k">Not seen 60d+</div><div class="v">${stale.length}</div><div class="s">of ${all.length} advisees</div></div>
     </div>
 
     <div class="sec-label">Flagged items</div>
     ${flagged.length ? `<div class="t-wrap"><table><thead><tr>
-        <th style="width:26px"></th><th>Student</th><th>Item</th><th style="width:110px">Due</th><th style="width:90px">Logged</th><th style="width:70px"></th>
+        <th style="width:26px"></th><th>Student</th><th>Item</th><th style="width:118px">Follow up by</th><th style="width:92px">Logged</th><th style="width:74px"></th>
       </tr></thead><tbody>
-      ${flagged.slice(0, 25).map(({ s, e }) => `<tr class="click" data-open="${s.id}" data-entry="${e.id}">
-        <td><span class="tick" style="display:block;width:4px;height:16px;border-radius:2px;background:var(--${e.priority === 'urgent' ? 'urgent' : 'watch'})"></span></td>
-        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
-        <td>${esc(e.title || stripHtml(e.body).slice(0, 70) || '(untitled)')}<div class="sub">${esc(typeLabel(e.type))}</div></td>
-        <td class="mono ${e.dueDate && e.dueDate <= today() ? '' : ''}" style="${e.dueDate && e.dueDate <= today() ? 'color:var(--urgent);font-weight:500' : ''}">${e.dueDate ? esc(fmtDate(e.dueDate)) : '—'}</td>
-        <td class="mono sub">${esc(fmtDate(e.date))}</td>
-        <td><button class="btn sm" data-resolve="${s.id}:${e.id}">Resolve</button></td>
+      ${flagged.slice(0, 30).map(r => `<tr class="click" data-open="${r.s.id}"${r.e ? ` data-entry="${r.e.id}"` : ''}>
+        <td><span style="display:block;width:4px;height:16px;border-radius:2px;background:var(--${r.tone})"></span></td>
+        <td class="name-cell">${esc(r.s.last)}, ${esc(r.s.first)}</td>
+        <td>${esc(r.label)}<div class="sub">${esc(r.kind)}</div></td>
+        <td class="mono" style="${r.due && r.due <= today() ? 'color:var(--urgent);font-weight:500' : ''}">${r.due ? esc(fmtDate(r.due)) + (r.due <= today() ? ' ·' : '') : '—'}</td>
+        <td class="mono sub">${r.logged ? esc(fmtDate(r.logged)) : '—'}</td>
+        <td>${r.e ? `<button class="btn sm" data-resolve="${r.s.id}:${r.e.id}">Resolve</button>`
+      : `<button class="btn sm" data-clearflag="${r.s.id}:${r.sf}">Clear</button>`}</td>
       </tr>`).join('')}
-      </tbody></table></div>` : `<div class="card sub">Nothing flagged right now.</div>`}
+      </tbody></table></div>
+      <p class="hint" style="margin-top:8px">Anything logged as a Flag, anything marked Watch or Urgent, and the standing flags on a student's profile. Past due counts the ones whose follow-up date has come and gone.</p>`
+      : `<div class="card sub">Nothing flagged. Use <b>Flag an issue</b> on a student's page, mark any record entry Watch or Urgent, or tick a standing flag on their profile.</div>`}
+
+    <div class="sec-label">Degree audit needs attention</div>
+    ${attn.length ? `<div class="t-wrap"><table><thead><tr>
+      <th>Student</th><th style="width:130px">Audit status</th><th style="width:150px">Program</th><th style="width:118px">Progress</th><th style="width:118px">Last meeting</th><th style="width:96px">Class year</th>
+    </tr></thead><tbody>
+    ${attn.map(s => {
+      const tone = auditTone(s), pr = curriculumProgress(s), last = lastMeeting(s);
+      return `<tr class="click audit-${tone}" data-open="${s.id}">
+        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
+        <td><span class="chip ${tone}">${esc(s.auditStatus)}</span></td>
+        <td class="sub">${esc(allTemplates()[s.program] ? allTemplates()[s.program].title : (s.program || '—'))}</td>
+        <td>${pr ? `<div class="prog" style="margin:0"><u style="width:${pr.regPct.toFixed(0)}%"></u><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
+        <td class="mono">${last ? esc(fmtDate(last)) : '<span style="color:var(--urgent)">never</span>'}</td>
+        <td class="sub">${esc(s.classYear || '—')}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>` : `<div class="card sub">No advisee is marked Delayed, Incomplete or Needs review.</div>`}
 
     <div class="sec-label">Haven't met in a while</div>
     ${stale.length ? `<div class="t-wrap"><table><thead><tr>
@@ -1344,6 +1384,7 @@ function renderStudent(p) {
       </div>` : ''}
       <div class="row no-print" style="align-items:flex-start">
         <button class="btn" data-act="print">Print</button>
+        <button class="btn" data-act="add-flag">Flag an issue</button>
         <button class="btn pri" data-act="add-entry">Add to record</button>
       </div>
     </div>
@@ -1387,8 +1428,8 @@ function renderRecordTab(body, s, counts) {
 }
 
 function eventHtml(s, e) {
-  const pcls = e.status === 'done' && e.priority && e.priority !== 'none' ? 'p-done'
-    : e.priority === 'urgent' ? 'p-urgent' : e.priority === 'watch' ? 'p-watch' : '';
+  const tone = entryTone(e);
+  const pcls = e.status === 'done' && tone ? 'p-done' : tone === 'urgent' ? 'p-urgent' : tone === 'watch' ? 'p-watch' : '';
   const dt = e.date ? new Date(e.date + (e.date.length === 10 ? 'T12:00:00' : '')) : null;
   const fields = [];
   if (e.type === 'meeting') {
@@ -1409,7 +1450,7 @@ function eventHtml(s, e) {
       <div class="ev-top">
         <span class="chip ${e.type === 'flag' ? 'urgent' : e.type === 'email' ? 'accent' : ''}">${esc(typeLabel(e.type))}</span>
         <span class="ev-title">${esc(e.title || e.subject || '(untitled)')}</span>
-        ${e.priority && e.priority !== 'none' ? `<span class="chip ${e.priority === 'urgent' ? 'urgent' : 'watch'}">${e.status === 'done' ? 'resolved' : e.priority}</span>` : ''}
+        ${tone ? `<span class="chip ${tone}">${e.status === 'done' ? 'resolved' : (e.priority && e.priority !== 'none' ? e.priority : 'flagged')}</span>` : ''}
         ${e.status === 'done' ? '<span class="chip ok">done</span>' : ''}
       </div>
       ${bodyHtml ? `<div class="ev-body${long ? ' ev-fold' : ''}" data-body="${e.id}">${bodyHtml}</div>${long ? `<button class="ev-more" data-expand="${e.id}">Show the rest</button>` : ''}` : ''}
@@ -1417,7 +1458,10 @@ function eventHtml(s, e) {
       ${fields.length ? `<div class="ev-fields">${fields.map(([k, v]) => `<span><b>${esc(k)}:</b> ${esc(v)}</span>`).join('')}</div>` : ''}
       <div class="ev-act no-print">
         <button data-edit="${e.id}">Edit</button>
-        ${e.priority && e.priority !== 'none' ? `<button data-toggle-done="${e.id}">${e.status === 'done' ? 'Reopen' : 'Mark resolved'}</button>` : ''}
+        ${e.priority === 'urgent' ? '' : `<button data-setpri="${e.id}:urgent">Flag urgent</button>`}
+        ${e.priority === 'watch' ? '' : `<button data-setpri="${e.id}:watch">Flag watch</button>`}
+        ${e.priority && e.priority !== 'none' ? `<button data-setpri="${e.id}:none">Unflag</button>` : ''}
+        ${tone ? `<button data-toggle-done="${e.id}">${e.status === 'done' ? 'Reopen' : 'Mark resolved'}</button>` : ''}
         <button data-del="${e.id}">Delete</button>
       </div>
     </div></div>`;
@@ -1482,12 +1526,13 @@ function entryModal(s, existing, preset) {
         ${['meeting', 'email', 'note', 'flag'].map(t => `<option value="${t}" ${e.type === t ? 'selected' : ''}>${typeLabel(t)}</option>`).join('')}
       </select></div>
       <div class="field"><label>Date</label><input type="date" id="e-date" value="${esc((e.date || '').slice(0, 10))}"></div>
-      <div class="field"><label>Priority</label><select id="e-pri">
-        <option value="none" ${e.priority === 'none' ? 'selected' : ''}>Normal</option>
-        <option value="watch" ${e.priority === 'watch' ? 'selected' : ''}>Watch</option>
-        <option value="urgent" ${e.priority === 'urgent' ? 'selected' : ''}>Urgent</option>
+      <div class="field"><label>Flag as</label><select id="e-pri">
+        <option value="none" ${e.priority === 'none' ? 'selected' : ''}>Not flagged</option>
+        <option value="watch" ${e.priority === 'watch' ? 'selected' : ''}>Watch — amber</option>
+        <option value="urgent" ${e.priority === 'urgent' ? 'selected' : ''}>Urgent — red</option>
       </select></div>
-      <div class="field"><label>Follow up by</label><input type="date" id="e-due" value="${esc(e.dueDate || '')}"></div>
+      <div class="field"><label>Follow up by</label><input type="date" id="e-due" value="${esc(e.dueDate || '')}">
+        <span class="hint">Once this date passes, the item counts as past due on the dashboard.</span></div>
       <div class="field wide"><label>Title</label><input id="e-title" value="${esc(e.title || e.subject || '')}" placeholder="Fall registration — course selection"></div>
       <div class="field wide" id="meet-fields" style="display:none">
         <div class="fields" style="grid-template-columns:1fr 1fr">
@@ -1529,6 +1574,7 @@ function entryModal(s, existing, preset) {
       wireEditor(bg);
       const sync = () => {
         const t = $('#e-type', bg).value;
+        if (t === 'flag' && $('#e-pri', bg).value === 'none') $('#e-pri', bg).value = 'urgent';
         $('#meet-fields', bg).style.display = t === 'meeting' ? '' : 'none';
         $('#mail-fields', bg).style.display = t === 'email' ? '' : 'none';
       };
@@ -2101,6 +2147,7 @@ const ACT = {
     });
   },
   'add-entry': () => entryModal(getStudent(S.studentId)),
+  'add-flag': () => entryModal(getStudent(S.studentId), null, { type: 'flag', priority: 'urgent', title: '' }),
   'quick-note': () => entryModal(getStudent(S.studentId), null, { type: 'note' }),
   'drop-email': () => {
     const z = $('#emaildrop');
@@ -2194,7 +2241,7 @@ const ACT = {
 function wire() {
   document.addEventListener('click', async ev => {
     if (ev.target.matches('[data-chk],[data-slot],[data-gbdcourse]')) return;
-    const t = ev.target.closest('[data-nav],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
+    const t = ev.target.closest('[data-nav],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-setpri],[data-clearflag],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
     if (!t) return;
     const s = () => getStudent(S.studentId);
 
@@ -2235,6 +2282,18 @@ function wire() {
       return confirmBox('Delete this entry', `“${esc(e.title || typeLabel(e.type))}” from ${esc(fmtDate(e.date))} will be removed from the record.`, 'Delete', async () => {
         s().entries = s().entries.filter(x => x.id !== t.dataset.del); await save(); render();
       }, 'danger');
+    }
+    if (t.dataset.setpri) {
+      const [eid, pri] = t.dataset.setpri.split(':');
+      const e = (s().entries || []).find(x => x.id === eid);
+      e.priority = pri; if (pri !== 'none') e.status = 'open';
+      await save(); return render();
+    }
+    if (t.dataset.clearflag) {
+      const [sid, key] = t.dataset.clearflag.split(':');
+      const target = getStudent(sid);
+      target[key] = key === 'otherFlag' ? '' : false;
+      await save(); return render();
     }
     if (t.dataset.toggleDone) {
       const e = (s().entries || []).find(x => x.id === t.dataset.toggleDone);
