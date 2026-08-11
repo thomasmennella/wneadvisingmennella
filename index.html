@@ -1029,7 +1029,7 @@ function studentFlags(s) {
   return f;
 }
 function priorityRank(e) { return e.priority === 'urgent' ? 0 : e.priority === 'watch' ? 1 : 2; }
-const AUDIT_TONE = { 'on track': 'ok', 'complete': 'ok', 'needs review': 'watch', 'delayed': 'urgent', 'incomplete': 'urgent' };
+const AUDIT_TONE = { 'ahead': 'ok', 'on track': 'ok', 'complete': 'ok', 'needs review': 'watch', 'delayed': 'urgent', 'incomplete': 'urgent' };
 function auditTone(s) { return AUDIT_TONE[String(s.auditStatus || '').toLowerCase().trim()] || ''; }
 
 async function save(msg) {
@@ -1581,7 +1581,7 @@ function renderProfileTab(body, s) {
     <div class="sec-label">Progress toward the degree</div>
     <div class="card"><div class="fields">
       ${F('creditsEarned', 'Credits earned')}${F('creditsRemaining', 'Credits remaining')}
-      ${F('auditStatus', 'Degree audit status', { select: ['', 'On track', 'Needs review', 'Delayed', 'Incomplete', 'Complete'] })}
+      ${F('auditStatus', 'Degree audit status', { select: ['', 'Ahead', 'On track', 'Needs review', 'Delayed', 'Incomplete', 'Complete'] })}
       ${F('planLastThree', 'Last-three-semesters plan', { select: ['', 'Not needed yet', 'Needed', 'In progress', 'Complete'] })}
     </div></div>
 
