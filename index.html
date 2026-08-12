@@ -552,12 +552,12 @@ const Vault = {
     let handle;
     if (mode === 'open') {
       [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'Advising Hub backup', accept: { 'application/octet-stream': ['.hub'] } }],
+        types: [{ description: 'Advising Hub backup', accept: { 'application/json': ['.json', '.hub'] } }],
       });
     } else {
       handle = await window.showSaveFilePicker({
-        suggestedName: 'advising-hub.hub',
-        types: [{ description: 'Advising Hub backup', accept: { 'application/octet-stream': ['.hub'] } }],
+        suggestedName: 'advising-hub.hub.json',
+        types: [{ description: 'Advising Hub backup', accept: { 'application/json': ['.json', '.hub'] } }],
       });
     }
     this.fileHandle = handle; this.fileLinked = true;
@@ -619,13 +619,13 @@ const Vault = {
       counts: { students: this.data.students.length, entries: this.data.students.reduce((n, s) => n + (s.entries || []).length, 0) },
       iv, ct,
     };
-    return new Blob([JSON.stringify(payload)], { type: 'application/octet-stream' });
+    return new Blob([JSON.stringify(payload)], { type: 'application/json' });
   },
 
   async downloadBackup() {
     const blob = await this.makeBackupBlob();
     const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-    download(blob, `advising-hub-${stamp}.hub`);
+    download(blob, `advising-hub-${stamp}.hub.json`);
     this.dirty = 0; await IDB.set('dirtyCount', 0);
     this.lastBackup = new Date().toISOString();
     await IDB.set('lastBackup', this.lastBackup);
@@ -1827,7 +1827,7 @@ function renderData(p) {
     <div class="card">
       ${Vault.supportsFile() ? `
         <p style="font-size:13.5px;line-height:1.65;margin-bottom:12px">
-          Link the hub to a single <b>.hub</b> file in your OneDrive folder and every change writes straight to it — office and laptop stay on the same copy, and OneDrive handles the syncing.
+          Link the hub to a single <b>.hub.json</b> file in your OneDrive folder and every change writes straight to it — office and laptop stay on the same copy, and OneDrive handles the syncing.
           Do this once on each machine, pointing at the same file. The file stays encrypted with your passcode.
         </p>
         <div class="row">
@@ -2066,8 +2066,8 @@ function restoreFlow() {
     const f = inp.files[0]; if (!f) return;
     let peek;
     try { peek = JSON.parse(await f.text()); }
-    catch (e) { return toast('That file is not readable as a backup.', 'bad'); }
-    if (peek.app !== APP) return toast('That is not an Advising Hub backup.', 'bad');
+    catch (e) { return toast(`${f.name} is not readable as a backup — pick the file you downloaded from Backup & data.`, 'bad'); }
+    if (peek.app !== APP) return toast(`${f.name} is not an Advising Hub backup.`, 'bad');
     const encrypted = peek.kind !== 'plain-export';
     modal({
       title: 'Restore from a backup',
@@ -2498,7 +2498,7 @@ async function boot() {
   let seedFile = null;
   $('#lock-restore').querySelector('button').onclick = () => {
     const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = '.hub,.json';
+    inp.type = 'file'; inp.accept = '.hub,.json,.txt,application/json,application/octet-stream,*/*';
     inp.onchange = () => {
       seedFile = inp.files[0]; if (!seedFile) return;
       $('#lock-sub').textContent = 'Restoring ' + seedFile.name;
