@@ -295,8 +295,13 @@ tbody tr.click{cursor:pointer}
 .seg button:last-child{border-right:none}
 .seg button.on{background:var(--ink);color:#fff}
 
+.scrim{display:none}
+
 @media (max-width:860px){
   :root{--rail:0px}
+  .scrim.on{display:block;position:fixed;inset:0;background:rgba(18,20,27,.42);z-index:55;backdrop-filter:blur(1px)}
+  .rail.open .rail-top{padding-right:46px}
+  .rail-close{display:flex !important}
   .rail{transform:translateX(-100%);transition:transform .2s;width:212px}
   .rail.open{transform:none;box-shadow:0 0 40px rgba(0,0,0,.3)}
   .main{margin-left:0}
@@ -310,6 +315,8 @@ tbody tr.click{cursor:pointer}
   .menu-btn{display:block !important}
 }
 .menu-btn{display:none;padding:6px 9px;border:1px solid var(--line-2);border-radius:6px}
+.rail-close{display:none;position:absolute;top:14px;right:10px;width:30px;height:30px;align-items:center;justify-content:center;border-radius:6px;color:#aeb4c2;font-size:20px;line-height:1;z-index:2}
+.rail-close:hover{background:rgba(255,255,255,.1);color:#fff}
 
 @media print{
   .rail,.topbar,.tabs,.ev-act,.no-print,.btn{display:none !important}
@@ -362,7 +369,9 @@ tbody tr.audit-urgent td:first-child{box-shadow:inset 3px 0 0 var(--urgent)}
 </div>
 
 <div class="shell" id="shell">
+  <div class="scrim" id="scrim"></div>
   <aside class="rail" id="rail">
+    <button class="rail-close" id="rail-close" aria-label="Close menu">&times;</button>
     <div class="rail-top">
       <div class="rail-mark">Advising<span> Hub</span></div>
       <div class="rail-status" id="rail-status"></div>
@@ -2372,11 +2381,18 @@ function wire() {
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); $('#search').focus(); $('#search').select(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); ACT['backup'](); }
+    if (e.key === 'Escape' && $('#rail').classList.contains('open')) window.dispatchEvent(new Event('close-rail'));
     if (e.key === 'Escape' && document.activeElement === $('#search')) { $('#search').value = ''; S.q = ''; render(); }
     resetIdle();
   });
   document.addEventListener('mousemove', resetIdle, { passive: true });
-  $('#menu-btn').onclick = () => $('#rail').classList.toggle('open');
+  const rail = () => $('#rail'), scrim = () => $('#scrim');
+  const setRail = on => { rail().classList.toggle('open', on); scrim().classList.toggle('on', on); };
+  $('#menu-btn').onclick = e => { e.stopPropagation(); setRail(!rail().classList.contains('open')); };
+  scrim().onclick = () => setRail(false);
+  $('#rail-close').onclick = () => setRail(false);
+  rail().addEventListener('click', e => { if (e.target.closest('[data-nav],[data-act]')) setRail(false); });
+  window.addEventListener('close-rail', () => setRail(false));
   window.addEventListener('vault-saved', paintStatus);
   window.addEventListener('beforeunload', e => {
     if (!Vault.fileLinked && Vault.dirty > 15) { e.preventDefault(); e.returnValue = ''; }
