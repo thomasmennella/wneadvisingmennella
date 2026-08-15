@@ -351,6 +351,27 @@ tbody tr.audit-urgent td:first-child{box-shadow:inset 3px 0 0 var(--urgent)}
 
 .ct-alert{color:var(--urgent);font-weight:700;letter-spacing:.04em}
 .creq.done .ct-alert{color:#8d2129}
+
+/* ── dashboard tiles ── */
+.tiles{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}
+.metric.tile{text-align:left;cursor:pointer;position:relative;padding:17px 18px 15px;transition:border-color .12s,transform .12s,box-shadow .12s}
+.metric.tile:hover{border-color:var(--line-2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(21,24,33,.07)}
+.metric.tile:active{transform:none}
+.metric.tile .v{font-size:44px;margin-top:7px}
+.metric.tile .s{min-height:32px}
+.tile-go{display:block;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.metric.tile:hover .tile-go{color:var(--accent)}
+.metric.tile.hot{border-color:#eec9c9}
+.metric.tile.hot .v{color:var(--urgent)}
+.metric.tile.hot:hover{border-color:var(--urgent)}
+.metric.tile.warm{border-color:#eedcbb}
+.metric.tile.warm .v{color:var(--watch)}
+.metric.tile.warm:hover{border-color:var(--watch)}
+@media (max-width:860px){
+  .tiles{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .metric.tile .v{font-size:34px}
+  .metric.tile .s{min-height:0}
+}
 </style>
 </head>
 <body>
@@ -961,7 +982,7 @@ window.__TPL__ = {"bio":{"title":"BS Biology","requirements":[{"id":"bio107","ye
    Advising Hub — interface
    ═══════════════════════════════════════════════════════════ */
 
-const S = { view: 'dash', studentId: null, tab: 'record', filter: 'all', q: '', sort: 'name', showArchived: false };
+const S = { view: 'dash', drill: null, studentId: null, tab: 'record', filter: 'all', q: '', sort: 'name', showArchived: false };
 let TPL = window.__TPL__ || {};           // built-in program templates (injected at build)
 let idleTimer = null;
 
@@ -1135,23 +1156,38 @@ function render() {
   if (S.view === 'student') return renderStudent(p);
   if (S.view === 'data') return renderData(p);
 }
-function go(view, id) { S.view = view; S.studentId = id || null; S.q = ''; $('#search').value = ''; window.scrollTo(0, 0); render(); }
+function go(view, id) { S.view = view; S.studentId = id || null; S.q = ''; S.drill = null; $('#search').value = ''; window.scrollTo(0, 0); render(); }
 
 /* ═══ DASHBOARD ══════════════════════════════════════════ */
-function renderDash(p) {
+/* ─── Dashboard tiles and their drill-downs ─────────────── */
+function dashData() {
   const all = students().filter(s => !s.archived);
   const flagged = flagRows(all);
-  const urgent = flagged.filter(f => f.tone === 'urgent');
-  const due = flagged.filter(f => f.due && f.due <= today());
-  const stale = all.map(s => ({ s, last: lastMeeting(s) }))
-    .filter(x => !x.last || daysBetween(x.last, today()) > 60)
-    .sort((a, b) => (a.last || '').localeCompare(b.last || ''));
   const ATTN = { 'delayed': 'urgent', 'incomplete': 'urgent', 'needs review': 'watch' };
-  const attn = all.filter(s => ATTN[String(s.auditStatus || '').toLowerCase().trim()])
-    .sort((a, b) => (ATTN[a.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1) - (ATTN[b.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1)
-      || sortName(a.s || a).localeCompare(sortName(b.s || b)));
+  return {
+    all,
+    flagged,
+    urgent: flagged.filter(f => f.tone === 'urgent'),
+    due: flagged.filter(f => f.due && f.due <= today()),
+    attn: all.filter(s => ATTN[String(s.auditStatus || '').toLowerCase().trim()])
+      .sort((a, b) => (ATTN[a.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1) - (ATTN[b.auditStatus.toLowerCase()] === 'urgent' ? 0 : 1)
+        || sortName(a).localeCompare(sortName(b))),
+    unreg: all.filter(s => !s.regMeetingDone).sort((a, b) => sortName(a).localeCompare(sortName(b))),
+  };
+}
 
-  if (!all.length) {
+const TILES = [
+  { k: 'all', label: 'Advisees', sub: d => `${students().filter(s => s.archived).length} archived`, tone: '' },
+  { k: 'urgent', label: 'Urgent open', sub: d => `${d.flagged.length - d.urgent.length} on watch`, tone: 'hot' },
+  { k: 'due', label: 'Past due', sub: () => 'follow-up date has passed', tone: 'warm' },
+  { k: 'attn', label: 'Audit attention', sub: () => 'delayed, incomplete, under review', tone: 'warm' },
+  { k: 'flagged', label: 'Flagged', sub: () => 'all open flags and standing flags', tone: 'warm' },
+  { k: 'unreg', label: 'Not registered', sub: d => `of ${d.all.length} — no registration meeting`, tone: 'warm' },
+];
+
+function renderDash(p) {
+  const d = dashData();
+  if (!d.all.length) {
     p.innerHTML = `<div class="empty" style="padding-top:70px">
       <h3>No advisees yet</h3>
       <p>Import your tracker spreadsheet to bring in your roster, or add the first student by hand.</p>
@@ -1162,6 +1198,7 @@ function renderDash(p) {
       </div></div>`;
     return;
   }
+  if (S.drill) return renderDrill(p, d, S.drill);
 
   p.innerHTML = `
     <div class="page-head">
@@ -1170,61 +1207,99 @@ function renderDash(p) {
       <button class="btn" data-act="new-student">Add student</button>
       <button class="btn pri" data-act="quick-log">Log a meeting</button>
     </div>
+    <div class="grid tiles">
+      ${TILES.map(t => {
+        const n = d[t.k].length;
+        const live = n > 0 ? t.tone : '';
+        return `<button class="metric tile ${live}" data-drill="${t.k}">
+          <div class="k">${esc(t.label)}</div>
+          <div class="v">${n}</div>
+          <div class="s">${esc(t.sub(d))}</div>
+          <span class="tile-go">View ${n === 1 ? 'the one' : 'all ' + n} →</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+}
 
-    <div class="grid metrics">
-      <div class="metric"><div class="k">Advisees</div><div class="v">${all.length}</div><div class="s">${students().filter(s => s.archived).length} archived</div></div>
-      <div class="metric${urgent.length ? ' hot' : ''}"><div class="k">Urgent open</div><div class="v">${urgent.length}</div><div class="s">${flagged.length - urgent.length} on watch</div></div>
-      <div class="metric${due.length ? ' warm' : ''}"><div class="k">Past due</div><div class="v">${due.length}</div><div class="s">follow-up date has passed</div></div>
-      <div class="metric${attn.length ? ' warm' : ''}"><div class="k">Audit attention</div><div class="v">${attn.length}</div><div class="s">delayed, incomplete or under review</div></div>
-      <div class="metric"><div class="k">Not seen 60d+</div><div class="v">${stale.length}</div><div class="s">of ${all.length} advisees</div></div>
+/* Item-based tiles list flag rows; student-based tiles list advisees. */
+function renderDrill(p, d, key) {
+  const tile = TILES.find(t => t.k === key);
+  const rows = d[key];
+  const itemBased = key === 'urgent' || key === 'due' || key === 'flagged';
+  p.innerHTML = `
+    <button class="btn sm no-print" data-drill="" style="margin-bottom:14px">← Dashboard</button>
+    <div class="page-head">
+      <div><div class="eyebrow">${rows.length} ${itemBased ? (rows.length === 1 ? 'item' : 'items') : (rows.length === 1 ? 'advisee' : 'advisees')}</div>
+      <h1>${esc(tile.label)}</h1></div>
+      <div class="spacer"></div>
+      ${key === 'unreg' && rows.length ? '<button class="btn" data-nav="students">Tick them off in the list</button>' : ''}
+      ${key === 'all' ? '<button class="btn" data-nav="students">Full list with filters</button>' : ''}
     </div>
+    <p class="hint" style="margin:-8px 0 16px">${esc(drillNote(key))}</p>
+    ${rows.length ? (itemBased ? itemTable(rows) : studentTable(rows, key))
+      : `<div class="card sub">Nothing here — ${esc(emptyNote(key))}</div>`}`;
+}
 
-    <div class="sec-label">Flagged items</div>
-    ${flagged.length ? `<div class="t-wrap"><table><thead><tr>
-        <th style="width:26px"></th><th>Student</th><th>Item</th><th style="width:118px">Follow up by</th><th style="width:92px">Logged</th><th style="width:74px"></th>
-      </tr></thead><tbody>
-      ${flagged.slice(0, 30).map(r => `<tr class="click" data-open="${r.s.id}"${r.e ? ` data-entry="${r.e.id}"` : ''}>
-        <td><span style="display:block;width:4px;height:16px;border-radius:2px;background:var(--${r.tone})"></span></td>
-        <td class="name-cell">${esc(r.s.last)}, ${esc(r.s.first)}</td>
-        <td>${esc(r.label)}<div class="sub">${esc(r.kind)}</div></td>
-        <td class="mono" style="${r.due && r.due <= today() ? 'color:var(--urgent);font-weight:500' : ''}">${r.due ? esc(fmtDate(r.due)) + (r.due <= today() ? ' ·' : '') : '—'}</td>
-        <td class="mono sub">${r.logged ? esc(fmtDate(r.logged)) : '—'}</td>
-        <td>${r.e ? `<button class="btn sm" data-resolve="${r.s.id}:${r.e.id}">Resolve</button>`
-      : `<button class="btn sm" data-clearflag="${r.s.id}:${r.sf}">Clear</button>`}</td>
-      </tr>`).join('')}
-      </tbody></table></div>
-      <p class="hint" style="margin-top:8px">Anything logged as a Flag, anything marked Watch or Urgent, and the standing flags on a student's profile. Past due counts the ones whose follow-up date has come and gone.</p>`
-      : `<div class="card sub">Nothing flagged. Use <b>Flag an issue</b> on a student's page, mark any record entry Watch or Urgent, or tick a standing flag on their profile.</div>`}
+function drillNote(k) {
+  return {
+    all: 'Every advisee not archived. Click a name to open their record.',
+    urgent: 'Anything marked Urgent and not yet resolved.',
+    due: 'Flagged items whose follow-up date has come and gone.',
+    attn: 'Advisees whose degree audit status is Delayed, Incomplete or Needs review.',
+    flagged: 'Everything open: flags, items marked Watch or Urgent, and standing flags from profiles.',
+    unreg: 'Advisees without a tick in Registration meeting complete.',
+  }[k] || '';
+}
+function emptyNote(k) {
+  return {
+    urgent: 'nothing is marked urgent.', due: 'no follow-up dates have passed.',
+    attn: 'no audit status needs attention.', flagged: 'nothing is flagged.',
+    unreg: 'every advisee has had their registration meeting.', all: 'no active advisees.',
+  }[k] || 'nothing to show.';
+}
 
-    <div class="sec-label">Degree audit needs attention</div>
-    ${attn.length ? `<div class="t-wrap"><table><thead><tr>
-      <th>Student</th><th style="width:130px">Audit status</th><th style="width:150px">Program</th><th style="width:118px">Progress</th><th style="width:118px">Last meeting</th><th style="width:96px">Class year</th>
+function itemTable(rows) {
+  return `<div class="t-wrap"><table><thead><tr>
+      <th style="width:26px"></th><th>Student</th><th>Item</th><th style="width:118px">Follow up by</th><th style="width:92px">Logged</th><th style="width:74px"></th>
     </tr></thead><tbody>
-    ${attn.map(s => {
-      const tone = auditTone(s), pr = curriculumProgress(s), last = lastMeeting(s);
-      return `<tr class="click audit-${tone}" data-open="${s.id}">
-        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
-        <td><span class="chip ${tone}">${esc(s.auditStatus)}</span></td>
-        <td class="sub">${esc(allTemplates()[s.program] ? allTemplates()[s.program].title : (s.program || '—'))}</td>
-        <td>${pr ? `<div class="prog" style="margin:0"><u style="width:${pr.regPct.toFixed(0)}%"></u><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
-        <td class="mono">${last ? esc(fmtDate(last)) : '<span style="color:var(--urgent)">never</span>'}</td>
+    ${rows.map(r => `<tr class="click" data-open="${r.s.id}"${r.e ? ` data-entry="${r.e.id}"` : ''}>
+      <td><span style="display:block;width:4px;height:16px;border-radius:2px;background:var(--${r.tone})"></span></td>
+      <td class="name-cell">${esc(r.s.last)}, ${esc(r.s.first)}</td>
+      <td>${esc(r.label)}<div class="sub">${esc(r.kind)}</div></td>
+      <td class="mono" style="${r.due && r.due <= today() ? 'color:var(--urgent);font-weight:500' : ''}">${r.due ? esc(fmtDate(r.due)) : '—'}</td>
+      <td class="mono sub">${r.logged ? esc(fmtDate(r.logged)) : '—'}</td>
+      <td>${r.e ? `<button class="btn sm" data-resolve="${r.s.id}:${r.e.id}">Resolve</button>`
+        : `<button class="btn sm" data-clearflag="${r.s.id}:${r.sf}">Clear</button>`}</td>
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function studentTable(rows, key) {
+  const progs = allTemplates();
+  return `<div class="t-wrap"><table><thead><tr>
+      <th>Student</th><th style="width:112px">Class year</th><th style="width:150px">Program</th>
+      <th style="width:126px">Audit status</th><th style="width:118px">Progress</th><th style="width:112px">Last meeting</th>
+      ${key === 'unreg' ? '<th style="width:80px">Reg. meeting</th>' : '<th>Flags</th>'}
+    </tr></thead><tbody>
+    ${rows.map(s => {
+      const tone = auditTone(s), pr = curriculumProgress(s), last = lastMeeting(s), open = openItems(s);
+      return `<tr class="click${tone ? ' audit-' + tone : ''}" data-open="${s.id}">
+        <td class="name-cell">${esc(s.last)}, ${esc(s.first)}${s.careerAmbition ? `<div class="sub">${esc(s.careerAmbition)}</div>` : ''}</td>
         <td class="sub">${esc(s.classYear || '—')}</td>
+        <td class="sub">${esc(progs[s.program] ? progs[s.program].title : (s.program || '—'))}</td>
+        <td>${s.auditStatus ? `<span class="chip ${tone}">${esc(s.auditStatus)}</span>` : '<span class="sub">—</span>'}</td>
+        <td>${pr ? `<div class="prog" style="margin:0"><u style="width:${pr.regPct.toFixed(0)}%"></u><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
+        <td class="mono" style="${!last || daysBetween(last, today()) > 60 ? 'color:var(--watch)' : ''}">${last ? esc(fmtDate(last)) : 'never'}</td>
+        ${key === 'unreg'
+          ? `<td style="text-align:center"><input type="checkbox" class="regbox" data-chk="${s.id}:regMeetingDone" aria-label="Registration meeting complete"></td>`
+          : `<td><div class="chips">
+              ${open.filter(e => e.priority === 'urgent').length ? `<span class="chip urgent">${open.filter(e => e.priority === 'urgent').length} urgent</span>` : ''}
+              ${open.filter(e => e.priority !== 'urgent').length ? `<span class="chip watch">${open.filter(e => e.priority !== 'urgent').length} watch</span>` : ''}
+              ${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}
+            </div></td>`}
       </tr>`;
     }).join('')}
-    </tbody></table></div>` : `<div class="card sub">No advisee is marked Delayed, Incomplete or Needs review.</div>`}
-
-    <div class="sec-label">Haven't met in a while</div>
-    ${stale.length ? `<div class="t-wrap"><table><thead><tr>
-      <th>Student</th><th style="width:120px">Class year</th><th style="width:130px">Last meeting</th><th style="width:110px">Meetings</th><th>Flags</th>
-    </tr></thead><tbody>
-    ${stale.slice(0, 15).map(({ s, last }) => `<tr class="click" data-open="${s.id}">
-      <td class="name-cell">${esc(s.last)}, ${esc(s.first)}</td>
-      <td class="sub">${esc(s.classYear || '—')}</td>
-      <td class="mono">${last ? esc(fmtDate(last)) : '<span style="color:var(--urgent)">never</span>'}</td>
-      <td class="mono sub">${entries(s, 'meeting').length}</td>
-      <td><div class="chips">${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}</div></td>
-    </tr>`).join('')}
-    </tbody></table></div>` : `<div class="card sub">Everyone's been seen within 60 days.</div>`}`;
+  </tbody></table></div>`;
 }
 
 function typeLabel(t) {
@@ -2271,13 +2346,15 @@ const ACT = {
 function wire() {
   document.addEventListener('click', async ev => {
     if (ev.target.matches('[data-chk],[data-slot],[data-gbdcourse]')) return;
-    const t = ev.target.closest('[data-nav],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-setpri],[data-clearflag],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
+    const t = ev.target.closest('[data-nav],[data-drill],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-setpri],[data-clearflag],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
     if (!t) return;
     const s = () => getStudent(S.studentId);
 
     if (t.dataset.nav) return go(t.dataset.nav);
+    if (t.hasAttribute('data-drill')) { S.drill = t.dataset.drill || null; window.scrollTo(0, 0); return render(); }
     if (t.dataset.open) {
       const eid = t.dataset.entry;
+      S.drill = null;
       S.tab = 'record'; go('student', t.dataset.open);
       if (eid) { const el = document.getElementById('ev-' + eid); if (el) { el.scrollIntoView({ block: 'center' }); el.style.transition = 'background .5s'; } }
       return;
