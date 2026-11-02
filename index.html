@@ -216,10 +216,16 @@ tbody tr.click{cursor:pointer}
 .creq.reg{background:var(--watch-soft);border-color:#e6cfa0}
 .creq-main{display:flex;gap:9px;align-items:flex-start;text-align:left;width:100%}
 .creq-foot{display:flex;flex-direction:column;gap:5px;padding-top:6px;border-top:1px dashed var(--line-2)}
+.mini-row{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .creq-foot input{border:1px solid var(--line-2);border-radius:5px;padding:4px 7px;font-family:var(--mono);font-size:11.5px;width:100%;background:var(--surface)}
 .creq-foot .mini{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
 .creq-foot .mini:hover{color:var(--text)}
 .creq-foot .mini.on{color:var(--watch)}
+.creq-foot .mini.plan.on{color:var(--accent)}
+.mini.plan.on .minibox{background:var(--accent);border-color:var(--accent);color:#fff}
+.creq.plan{background:var(--accent-soft);border-color:#c3d2f7}
+.creq.plan .mini.plan{color:var(--accent)}
+.creq.done .mini.plan{color:var(--ok)}
 .creq-foot .mini[disabled]{opacity:.35;cursor:not-allowed}
 .minibox{width:13px;height:13px;border:1.5px solid var(--line-2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;flex:none}
 .mini.on .minibox{background:var(--watch);border-color:var(--watch);color:#fff}
@@ -1114,8 +1120,10 @@ function curriculumProgress(s) {
   const elecDone = (s.curriculum.electives || []).reduce((n, e) => n + (parseFloat(e.cr) || 0), 0);
   const regMap = s.curriculum.reg || {};
   const regN = t.requirements.filter(r => regMap[r.id] && !done[r.id]).length;
+  const planMap = s.curriculum.plan || {};
+  const planN = t.requirements.filter(r => planMap[r.id] && !done[r.id] && !regMap[r.id]).length;
   const total = reqTotal + gbdList.length, doneN = reqDone + gbdDone;
-  return { reqTotal, reqDone, gbdTotal: gbdList.length, gbdDone, crDone, crTotal, elecDone, elecTotal: t.electiveCreditsRequired || 0, total, doneN, regN, pct: total ? doneN / total * 100 : 0, regPct: total ? (doneN + regN) / total * 100 : 0 };
+  return { reqTotal, reqDone, gbdTotal: gbdList.length, gbdDone, crDone, crTotal, elecDone, elecTotal: t.electiveCreditsRequired || 0, total, doneN, regN, pct: total ? doneN / total * 100 : 0, regPct: total ? (doneN + regN) / total * 100 : 0, planN, planPct: total ? (doneN + regN + planN) / total * 100 : 0 };
 }
 
 /* ═══ RAIL ═══════════════════════════════════════════════ */
@@ -1807,7 +1815,7 @@ function renderCurriculumTab(body, s) {
       <button class="btn pri" data-tab="profile">Go to profile</button></div>`;
     return;
   }
-  const done = s.curriculum.done || {}, reg = s.curriculum.reg || {}, gbdState = s.curriculum.gbd || {};
+  const done = s.curriculum.done || {}, reg = s.curriculum.reg || {}, plan = s.curriculum.plan || {}, gbdState = s.curriculum.gbd || {};
   const pr = curriculumProgress(s);
   const years = [...new Set(t.requirements.map(r => r.year))];
   const elecs = s.curriculum.electives || [];
@@ -1816,7 +1824,7 @@ function renderCurriculumTab(body, s) {
   body.innerHTML = `
     <div class="card" style="margin-bottom:18px">
       <div class="row"><b>${esc(t.title)}</b><div class="spacer"></div>
-        <span class="mono sub">${pr.doneN}/${pr.total} complete${pr.regN ? ` · ${pr.regN} registered` : ''} · ${pr.crDone}/${pr.crTotal} credits · electives ${elecTotal}/${pr.elecTotal}</span></div>
+        <span class="mono sub">${pr.doneN}/${pr.total} complete${pr.regN ? ` · ${pr.regN} registered` : ''}${pr.planN ? ` · ${pr.planN} planned` : ''} · ${pr.crDone}/${pr.crTotal} credits · electives ${elecTotal}/${pr.elecTotal}</span></div>
       <div class="prog${pr.pct >= 100 ? ' done' : ''}"><u style="width:${pr.regPct.toFixed(0)}%"></u><i style="width:${pr.pct.toFixed(0)}%"></i></div>
       ${t.note ? `<p class="hint" style="margin-top:9px">${esc(t.note)}</p>` : ''}
     </div>
@@ -1827,16 +1835,21 @@ function renderCurriculumTab(body, s) {
           <div class="mono sub" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">${esc(term)}</div>
           <div class="term-grid">
           ${t.requirements.filter(r => r.year === y && r.term === term).map(r => `
-            <div class="creq ${done[r.id] ? 'done' : reg[r.id] ? 'reg' : ''}">
+            <div class="creq ${done[r.id] ? 'done' : reg[r.id] ? 'reg' : plan[r.id] ? 'plan' : ''}">
               <button data-req="${esc(r.id)}" class="creq-main" title="${esc(r.desc || '')}">
                 <span class="box">${done[r.id] ? '✓' : ''}</span>
                 <span><span class="cc">${esc(r.code)}</span><span class="cn">${esc(r.name)}</span>
                 <span class="ct">${r.credits ? (r.emphasis ? `<b class="ct-alert">${r.credits} cr — ${esc(r.emphasis)}</b>` : r.credits + ' cr') : ''}${r.tags && r.tags.length ? ' · ' + esc(r.tags.join(' · ')) : ''}</span></span>
               </button>
               <div class="creq-foot">
-                <button data-reg="${esc(r.id)}" class="mini ${reg[r.id] ? 'on' : ''}" ${done[r.id] ? 'disabled' : ''}>
-                  <span class="minibox">${reg[r.id] ? '◍' : ''}</span>Registered
-                </button>
+                <div class="mini-row">
+                  <button data-reg="${esc(r.id)}" class="mini ${reg[r.id] ? 'on' : ''}" ${done[r.id] ? 'disabled' : ''} title="Enrolled for this term">
+                    <span class="minibox">${reg[r.id] ? '◍' : ''}</span>Registered
+                  </button>
+                  <button data-plan="${esc(r.id)}" class="mini plan ${plan[r.id] ? 'on' : ''}" ${done[r.id] || reg[r.id] ? 'disabled' : ''} title="Intended for next semester">
+                    <span class="minibox">${plan[r.id] ? '◆' : ''}</span>Planned next semester
+                  </button>
+                </div>
                 ${r.slot ? `<input data-slot="${esc(r.id)}" value="${esc((s.curriculum.slots || {})[r.id] || '')}" placeholder="Course taken">` : ''}
               </div>
             </div>`).join('')}
@@ -2373,7 +2386,7 @@ const ACT = {
 function wire() {
   document.addEventListener('click', async ev => {
     if (ev.target.matches('[data-chk],[data-slot],[data-gbdcourse]')) return;
-    const t = ev.target.closest('[data-nav],[data-drill],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-setpri],[data-clearflag],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
+    const t = ev.target.closest('[data-nav],[data-drill],[data-open],[data-act],[data-tab],[data-filter],[data-sort],[data-req],[data-reg],[data-plan],[data-gbd],[data-edit],[data-del],[data-expand],[data-toggle-done],[data-setpri],[data-clearflag],[data-resolve],[data-planadd],[data-planx],[data-pcx],[data-pchl],[data-elx],[data-elwic]');
     if (!t) return;
     const s = () => getStudent(S.studentId);
 
@@ -2395,14 +2408,24 @@ function wire() {
       b.classList.remove('ev-fold'); t.remove(); return;
     }
     if (t.dataset.req) {
-      const st = s(); st.curriculum.done = st.curriculum.done || {}; st.curriculum.reg = st.curriculum.reg || {};
-      if (st.curriculum.done[t.dataset.req]) delete st.curriculum.done[t.dataset.req];
-      else { st.curriculum.done[t.dataset.req] = true; delete st.curriculum.reg[t.dataset.req]; }
+      const c = s().curriculum, id = t.dataset.req;
+      c.done = c.done || {}; c.reg = c.reg || {}; c.plan = c.plan || {};
+      if (c.done[id]) delete c.done[id];
+      else { c.done[id] = true; delete c.reg[id]; delete c.plan[id]; }
       await save(); return render();
     }
     if (t.dataset.reg) {
-      const st = s(); st.curriculum.reg = st.curriculum.reg || {};
-      st.curriculum.reg[t.dataset.reg] ? delete st.curriculum.reg[t.dataset.reg] : st.curriculum.reg[t.dataset.reg] = true;
+      const c = s().curriculum, id = t.dataset.reg;
+      c.reg = c.reg || {}; c.plan = c.plan || {};
+      if (c.reg[id]) delete c.reg[id];
+      else { c.reg[id] = true; delete c.plan[id]; }
+      await save(); return render();
+    }
+    if (t.dataset.plan) {
+      const c = s().curriculum, id = t.dataset.plan;
+      c.plan = c.plan || {}; c.reg = c.reg || {};
+      if (c.plan[id]) delete c.plan[id];
+      else { c.plan[id] = true; delete c.reg[id]; }
       await save(); return render();
     }
     if (t.dataset.gbd) {
