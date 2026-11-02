@@ -290,6 +290,7 @@ tbody tr.click{cursor:pointer}
 
 .filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .filters select,.filters input{border:1px solid var(--line-2);border-radius:6px;padding:6px 9px;font-size:12.5px;background:var(--surface)}
+.filters select.f-on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:500}
 .seg{display:flex;border:1px solid var(--line-2);border-radius:6px;overflow:hidden}
 .seg button{padding:6px 11px;font-size:12.5px;color:var(--muted);border-right:1px solid var(--line-2)}
 .seg button:last-child{border-right:none}
@@ -1315,6 +1316,19 @@ function renderStudents(p) {
   if (S.fYear) rows = rows.filter(s => s.classYear === S.fYear);
   if (S.fProg) rows = rows.filter(s => s.program === S.fProg);
   if (S.fFlag === 'flagged') rows = rows.filter(s => openItems(s).length || studentFlags(s).length);
+  if (S.fReg) {
+    const REG = {
+      'sched-no': s => !s.regMeetingScheduled,
+      'sched-yes': s => !!s.regMeetingScheduled,
+      'done-no': s => !s.regMeetingDone,
+      'done-yes': s => !!s.regMeetingDone,
+      'ver-no': s => !s.regVerified,
+      'ver-yes': s => !!s.regVerified,
+      'gap-sched': s => s.regMeetingScheduled && !s.regMeetingDone,
+      'gap-done': s => s.regMeetingDone && !s.regVerified,
+    };
+    if (REG[S.fReg]) rows = rows.filter(REG[S.fReg]);
+  }
   rows.sort((a, b) => S.sort === 'name' ? sortName(a).localeCompare(sortName(b))
     : S.sort === 'recent' ? (lastMeeting(b) || '').localeCompare(lastMeeting(a) || '')
       : (lastMeeting(a) || '0000').localeCompare(lastMeeting(b) || '0000'));
@@ -1330,19 +1344,31 @@ function renderStudents(p) {
       <select data-f="fYear"><option value="">All class years</option>${years.map(y => `<option ${S.fYear === y ? 'selected' : ''}>${esc(y)}</option>`).join('')}</select>
       <select data-f="fProg"><option value="">All programs</option>${Object.entries(progs).map(([k, t]) => `<option value="${esc(k)}" ${S.fProg === k ? 'selected' : ''}>${esc(t.title)}</option>`).join('')}</select>
       <select data-f="fFlag"><option value="">Everyone</option><option value="flagged" ${S.fFlag === 'flagged' ? 'selected' : ''}>Flagged only</option></select>
+      <select data-f="fReg" class="${S.fReg ? 'f-on' : ''}">
+        ${[['', 'Any registration status'],
+           ['__g', 'Meeting scheduled'], ['sched-no', 'Not scheduled'], ['sched-yes', 'Scheduled'],
+           ['__g', 'Meeting complete'], ['done-no', 'Not complete'], ['done-yes', 'Complete'],
+           ['__g', 'Registration verified'], ['ver-no', 'Not verified'], ['ver-yes', 'Verified'],
+           ['__g', 'Waiting on the next step'], ['gap-sched', 'Scheduled, not yet met'], ['gap-done', 'Met, not yet verified']]
+          .map(([v, label], i, arr) => v === '__g'
+            ? `${i ? '</optgroup>' : ''}<optgroup label="${esc(label)}">`
+            : `<option value="${esc(v)}" ${S.fReg === v ? 'selected' : ''}>${esc(label)}</option>`)
+          .join('')}</optgroup>
+      </select>
       <div class="seg">
         <button data-sort="name" class="${S.sort === 'name' ? 'on' : ''}">A–Z</button>
         <button data-sort="oldest" class="${S.sort === 'oldest' ? 'on' : ''}">Longest unseen</button>
         <button data-sort="recent" class="${S.sort === 'recent' ? 'on' : ''}">Most recent</button>
       </div>
       <div class="spacer"></div>
-      <span class="mono sub" style="font-size:11px">${list.filter(x => x.regMeetingDone).length}/${list.length} met · ${list.filter(x => x.regVerified).length}/${list.length} verified</span>
-      <button class="btn sm" data-act="clear-reg">Clear both columns</button>
+      <span class="mono sub" style="font-size:11px">${list.filter(x => x.regMeetingScheduled).length} scheduled · ${list.filter(x => x.regMeetingDone).length} met · ${list.filter(x => x.regVerified).length} verified · of ${list.length}</span>
+      <button class="btn sm" data-act="clear-reg">Clear registration columns</button>
       <button class="btn sm" data-act="toggle-archived">${S.showArchived ? 'Show active' : 'Show archived'}</button>
     </div>
     ${rows.length ? `<div class="t-wrap"><table><thead><tr>
-      <th>Student</th><th style="width:88px">ID</th><th style="width:112px">Class year</th><th style="width:150px">Program</th>
+      <th>Student</th><th style="width:112px">Class year</th><th style="width:150px">Program</th>
       <th style="width:118px">Progress</th><th style="width:110px">Last meeting</th><th>Flags</th>
+      <th style="width:74px">Registration meeting scheduled</th>
       <th style="width:74px">Registration meeting complete</th>
       <th style="width:74px">Course registration verified</th>
     </tr></thead><tbody>
@@ -1353,7 +1379,6 @@ function renderStudents(p) {
     const tone = auditTone(s);
     return `<tr class="click${tone ? ' audit-' + tone : ''}" data-open="${s.id}">
         <td class="name-cell">${esc(s.last)}, ${esc(s.first)}${s.careerAmbition ? `<div class="sub">${esc(s.careerAmbition)}</div>` : ''}</td>
-        <td class="mono sub">${esc(s.sid || '')}</td>
         <td class="sub">${esc(s.classYear || '—')}</td>
         <td class="sub">${esc(progs[s.program] ? progs[s.program].title : (s.program || '—'))}</td>
         <td>${pr ? `<div class="prog${pr.pct >= 100 ? ' done' : ''}" style="margin:0"><u style="width:${pr.regPct.toFixed(0)}%"></u><i style="width:${pr.pct.toFixed(0)}%"></i></div><div class="sub mono" style="font-size:10.5px;margin-top:3px">${pr.doneN}/${pr.total}</div>` : '<span class="sub">—</span>'}</td>
@@ -1364,6 +1389,7 @@ function renderStudents(p) {
           ${open.filter(e => e.priority === 'watch').length ? `<span class="chip watch">${open.filter(e => e.priority === 'watch').length} watch</span>` : ''}
           ${studentFlags(s).map(f => `<span class="chip ${f.k}">${esc(f.t)}</span>`).join('')}
         </div></td>
+        <td style="text-align:center"><input type="checkbox" class="regbox" data-chk="${s.id}:regMeetingScheduled" ${s.regMeetingScheduled ? 'checked' : ''} aria-label="Registration meeting scheduled"></td>
         <td style="text-align:center"><input type="checkbox" class="regbox" data-chk="${s.id}:regMeetingDone" ${s.regMeetingDone ? 'checked' : ''} aria-label="Registration meeting complete"></td>
         <td style="text-align:center"><input type="checkbox" class="regbox" data-chk="${s.id}:regVerified" ${s.regVerified ? 'checked' : ''} aria-label="Course registration verified"></td>
       </tr>`;
@@ -2122,10 +2148,11 @@ function oneNoteFlow(preStudent) {
 function exportCsv() {
   const cols = ['last', 'first', 'sid', 'classYear', 'program', 'track', 'minor', 'careerAmbition', 'preferredEmail',
     'creditsEarned', 'creditsRemaining', 'auditStatus', 'planLastThree', 'registrationHold', 'academicConcern',
-    'scholarshipCheck', 'otherFlag', 'generalNotes'];
+    'scholarshipCheck', 'otherFlag', 'regMeetingScheduled', 'regMeetingDone', 'regVerified', 'generalNotes'];
   const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
   const head = [...cols, 'lastMeeting', 'meetings', 'openFlags'].join(',');
-  const body = students().map(s => [...cols.map(c => q(typeof s[c] === 'boolean' ? (s[c] ? 'Yes' : 'No') : s[c])),
+  const BOOL = ['registrationHold', 'academicConcern', 'scholarshipCheck', 'regMeetingScheduled', 'regMeetingDone', 'regVerified'];
+  const body = students().map(s => [...cols.map(c => q(BOOL.includes(c) || typeof s[c] === 'boolean' ? (s[c] ? 'Yes' : 'No') : s[c])),
   q(lastMeeting(s) || ''), q(entries(s, 'meeting').length), q(openItems(s).length)].join(',')).join('\n');
   download(new Blob([head + '\n' + body], { type: 'text/csv' }), `advising-roster-${today()}.csv`);
 }
@@ -2331,13 +2358,13 @@ const ACT = {
   'toggle-archived': () => { S.showArchived = !S.showArchived; render(); },
   'clear-reg': () => {
     const list = students().filter(s => !s.archived);
-    const n = list.filter(s => s.regMeetingDone || s.regVerified).length;
-    if (!n) return toast('Both columns are already clear.');
-    confirmBox('Clear both registration columns',
-      `This unticks <b>Registration meeting complete</b> and <b>Course registration verified</b> for all ${list.length} active advisees — ${n} currently have at least one ticked. Nothing else on their records changes.`,
+    const n = list.filter(s => s.regMeetingScheduled || s.regMeetingDone || s.regVerified).length;
+    if (!n) return toast('All three columns are already clear.');
+    confirmBox('Clear the registration columns',
+      `This unticks <b>Registration meeting scheduled</b>, <b>Registration meeting complete</b> and <b>Course registration verified</b> for all ${list.length} active advisees — ${n} currently have at least one ticked. Nothing else on their records changes.`,
       'Clear them', async () => {
-        list.forEach(s => { s.regMeetingDone = false; s.regVerified = false; });
-        await save(); render(); toast('Both columns cleared', 'good');
+        list.forEach(s => { s.regMeetingScheduled = false; s.regMeetingDone = false; s.regVerified = false; });
+        await save(); render(); toast('Registration columns cleared', 'good');
       }, 'danger');
   },
 };
@@ -2483,7 +2510,7 @@ function paintRegCount() {
   const el = document.querySelector('.filters .mono.sub');
   if (!el) return;
   const list = students().filter(s => S.showArchived ? s.archived : !s.archived);
-  el.textContent = `${list.filter(x => x.regMeetingDone).length}/${list.length} met · ${list.filter(x => x.regVerified).length}/${list.length} verified`;
+  el.textContent = `${list.filter(x => x.regMeetingScheduled).length} scheduled · ${list.filter(x => x.regMeetingDone).length} met · ${list.filter(x => x.regVerified).length} verified · of ${list.length}`;
 }
 
 /* ═══ LOCK ═══════════════════════════════════════════════ */
